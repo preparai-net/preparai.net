@@ -78,6 +78,14 @@ async def gerar_documentos(request: Request):
             return regiao
         return r
 
+    # Helper: sanitizar justificativa — substituir [REGIÃO] pelo valor real
+    def sanitizar_justificativa(just_text):
+        """Se a justificativa contém [REGIÃO], substitui pela região real."""
+        if not just_text:
+            return ""
+        just_text = just_text.replace("[REGIÃO]", regiao).replace("[REGIAO]", regiao)
+        return just_text.strip()
+
     # Helper: justificativa padrão para cada tipo de APAC
     def default_justificativa(tipo, reg):
         base = f"Paciente em acompanhamento com ortopedista, com quadro de dor e limitação funcional em {reg} em seguimento diagnóstico-terapêutico."
@@ -108,7 +116,9 @@ async def gerar_documentos(request: Request):
         # ========================================
         # 1. APAC DE RETORNO (sempre gerada)
         # ========================================
-        retorno_just = (apacs.get("retorno", {}).get("justificativa", "") or "").strip()
+        retorno_just = sanitizar_justificativa(
+            (apacs.get("retorno", {}).get("justificativa", "") or "").strip()
+        )
         if not retorno_just:
             retorno_just = default_justificativa("retorno", regiao)
 
@@ -180,8 +190,10 @@ async def gerar_documentos(request: Request):
             apac_data = apacs.get(apac_type, {})
             if apac_data.get("ativo"):
                 cfg = config_fn(apac_data)
-                # Justificativa: usar a fornecida ou gerar padrão
-                just = (apac_data.get("justificativa", "") or "").strip()
+                # Justificativa: sanitizar [REGIÃO], usar fornecida ou gerar padrão
+                just = sanitizar_justificativa(
+                    (apac_data.get("justificativa", "") or "").strip()
+                )
                 if not just:
                     just = default_justificativa(apac_type, cfg["regiao"])
 
