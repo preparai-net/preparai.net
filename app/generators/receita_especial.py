@@ -71,59 +71,32 @@ def gerar_receita_especial(
         item1 = _replace_tag_content(item1, 'CompanyFax', medicamento2_posologia)
         _write_file(item1_path, item1)
 
-    # === document.xml ===
+    # === document.xml — Substituir conteúdo dos SDTs diretamente ===
     doc_path = os.path.join(unpack_dir, 'word', 'document.xml')
     if os.path.exists(doc_path):
         doc = _read_file(doc_path)
 
-        # Substituir nome do paciente
+        # Substituir nome do paciente em texto não-SDT
         doc = doc.replace('NOME DO PACIENTE', nome_paciente)
 
         # Substituir data
         doc = re.sub(r'\d{2}/\d{2}/\d{4}', data, doc)
 
-        # Substituir textos de exemplo dos medicamentos no document.xml
-        # O template tem "1. EXEMPLO ---... CX" e "2. EXEMPLO ---... CX" em cada via
-        # Quando há 2 medicamentos: substituir o 1o pelo med1, o 2o pelo med2
-        # Quando há 1 medicamento: substituir o 1o pelo med1, LIMPAR o 2o
+        # === Substituir conteúdo dos SDTs ===
+        # Os SDTs têm bindings via xpath. LibreOffice NÃO atualiza o cached content
+        # a partir das propriedades, então precisamos substituir diretamente.
 
-        # Contador para saber qual ocorrência estamos (alterna entre med1 e med2)
-        _replace_counter = [0]
+        # Mapeamento: xpath → texto de substituição
+        # IMPORTANTE: Chaves mais específicas PRIMEIRO (CompanyFax antes de Company)
+        # para evitar match parcial
+        sdt_replacements = [
+            ('creator', linha_med1),           # dc:creator → med1
+            ('contentStatus', linha_med2),     # cp:contentStatus → med2
+            ('CompanyFax', medicamento2_posologia),  # CompanyFax → pos2
+            ('Company', medicamento1_posologia),     # Company → pos1 (mais genérico por último)
+        ]
 
-        def _replace_exemplo(match):
-            _replace_counter[0] += 1
-            # Ocorrências ímpares (1a, 3a) = med1 | Pares (2a, 4a) = med2
-            if _replace_counter[0] % 2 == 1:
-                # Slot medicamento 1
-                if medicamento1_nome:
-                    return f'{medicamento1_nome} ------------------------------------- {medicamento1_qtd}'
-                return ''
-            else:
-                # Slot medicamento 2
-                if medicamento2_nome:
-                    return f'{medicamento2_nome} ------------------------------------- {medicamento2_qtd}'
-                return ''
-
-        doc = re.sub(r'EXEMPLO\s*-+\s*\d+\s*CX', _replace_exemplo, doc)
-
-        # Posologias de exemplo no template — o template tem a mesma posologia de exemplo repetida
-        # Precisamos substituir cada ocorrência: ímpar=pos1, par=pos2
-        _pos_counter = [0]
-        posologia_template = 'Tomar 01 comprimido via oral de 12/12h por 03 dias'
-
-        def _replace_posologia(match):
-            _pos_counter[0] += 1
-            if _pos_counter[0] % 2 == 1:
-                return medicamento1_posologia if medicamento1_posologia else ''
-            else:
-                return medicamento2_posologia if medicamento2_posologia else ''
-
-        doc = re.sub(re.escape(posologia_template), _replace_posologia, doc)
-
-        # Limpar prefixo "2." que sobra quando med2 está vazio
-        if not medicamento2_nome:
-            # Remove linhas "2.  " seguidas de espaço/traço que restam no XML
-            doc = re.sub(r'>2\.\s*<', '><', doc)
+        doc = _replace_sdt_contents(doc, sdt_replacements)
 
         _write_file(doc_path, doc)
 
@@ -134,6 +107,76 @@ def gerar_receita_especial(
     shutil.rmtree(work_dir, ignore_errors=True)
 
     return output_path
+
+
+def _replace_sdt_contents(xml_str, replacements):
+    """
+    Encontra todos os SDTs no XML e substitui o conteúdo com base no xpath binding.
+    replacements: lista de tuplas [(key, text), ...] — ordem importa (mais específico primeiro)
+    """
+    def sdt_replacer(match):
+        full_sdt = match.group(0)
+        sdt_inner = match.group(1)
+
+        # Determinar qual binding este SDT usa (primeiro match ganha)
+        replacement_text = None
+        for key, text in replacements:
+            if key in sdt_inner:
+                replacement_text = text
+                break
+
+        if replacement_text is None:
+            return full_sdt  # Não modificar SDTs que não reconhecemos
+
+        # Encontrar o sdtContent e substituir seus runs com texto novo
+        sdt_content_match = re.search(
+            r'(<w:sdtContent>)(.*?)(</w:sdtContent>)',
+            full_sdt,
+            re.DOTALL
+        )
+        if not sdt_content_match:
+            return full_sdt
+
+        old_content = sdt_content_match.group(2)
+
+        # Extrair o rPr (formatação) do primeiro run para preservar
+        rpr_match = re.search(r'(<w:rPr>.*?</w:rPr>)', old_content, re.DOTALL)
+        rpr = rpr_match.group(1) if rpr_match else ''
+
+        # Extrair o pPr (formatação do parágrafo) se existir
+        ppr_match = re.search(r'(<w:pPr>.*?</w:pPr>)', old_content, re.DOTALL)
+        ppr = ppr_match.group(1) if ppr_match else ''
+
+        # Extrair o paraId do parágrafo se existir
+        p_attrs_match = re.search(r'<w:p ([^>]+)>', old_content)
+        p_attrs = p_attrs_match.group(1) if p_attrs_match else ''
+
+        # Construir novo conteúdo com um único run
+        if replacement_text:
+            escaped_text = _escape_xml(replacement_text)
+            new_run = f'<w:r>{rpr}<w:t xml:space="preserve">{escaped_text}</w:t></w:r>'
+        else:
+            new_run = ''
+
+        new_content = f'<w:p {p_attrs}>{ppr}{new_run}</w:p>'
+        new_sdt_content = sdt_content_match.group(1) + new_content + sdt_content_match.group(3)
+
+        # Substituir sdtContent no SDT completo
+        result = full_sdt[:sdt_content_match.start()] + new_sdt_content + full_sdt[sdt_content_match.end():]
+        return result
+
+    # Aplicar em todos os SDTs
+    return re.sub(r'<w:sdt>(.*?)</w:sdt>', sdt_replacer, xml_str, flags=re.DOTALL)
+
+
+def _escape_xml(text):
+    """Escapa caracteres especiais para XML."""
+    return (text
+            .replace('&', '&amp;')
+            .replace('<', '&lt;')
+            .replace('>', '&gt;')
+            .replace('"', '&quot;')
+            .replace("'", '&apos;'))
 
 
 def _replace_tag_content(xml_str, tag_name, new_value):

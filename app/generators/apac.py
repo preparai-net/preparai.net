@@ -138,12 +138,13 @@ def gerar_apac(
         # Quantidade: substituir >Núm.< por >quantidade<
         doc = doc.replace('>Núm.<', f'>{quantidade}<')
 
-        # Solicitação/procedimento
+        # IMPORTANTE: Substituir justificativa PRIMEIRO (antes de "SOLICITAÇÃO")
+        # porque "JUSTIFICATIVA DA SOLICITAÇÃO" contém a palavra "SOLICITAÇÃO"
+        doc = doc.replace('JUSTIFICATIVA DA SOLICITAÇÃO', justificativa)
+
+        # Solicitação/procedimento (agora que "JUSTIFICATIVA DA SOLICITAÇÃO" já foi tratada)
         doc = doc.replace('>SOLICITAÇÃO<', f'>{procedimento}<')
         doc = doc.replace('SOLICITAÇÃO', procedimento)
-
-        # Justificativa
-        doc = doc.replace('JUSTIFICATIVA DA SOLICITAÇÃO', justificativa)
 
         # Data — buscar data do template (formato DD/MM/AAAA)
         doc = re.sub(r'\d{2}/\d{2}/\d{4}', data, doc)
