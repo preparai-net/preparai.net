@@ -573,7 +573,6 @@ function collectData() {
   const diagnostico1 = document.getElementById('diagnostico1').value.trim();
   const cid1 = document.getElementById('cid1').value.trim();
   const regiao = document.getElementById('regiao').value.trim().toUpperCase();
-  const observacao_clinica = document.getElementById('observacao_clinica').value.trim();
 
   // APACs
   const apacs = {
@@ -687,7 +686,6 @@ function collectData() {
     diagnostico1,
     cid1,
     regiao,
-    observacao_clinica,
     apacs,
     receita_simples,
     receita_especial,

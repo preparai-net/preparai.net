@@ -150,20 +150,9 @@ async function gerarAtestado(dados, outputPath) {
     })
   );
 
-  // Espaço + Local e data
+  // Espaço + Assinatura
   bodyChildren.push(new Paragraph({ spacing: { before: 600 } }));
 
-  bodyChildren.push(
-    new Paragraph({
-      alignment: AlignmentType.CENTER,
-      spacing: { after: 200 },
-      children: [
-        new TextRun({ text: `Palmares-PE, ${data}`, size: 22, font: "Calibri" }),
-      ],
-    })
-  );
-
-  // Assinatura
   bodyChildren.push(
     new Paragraph({
       alignment: AlignmentType.CENTER,
@@ -194,8 +183,20 @@ async function gerarAtestado(dados, outputPath) {
   bodyChildren.push(
     new Paragraph({
       alignment: AlignmentType.CENTER,
+      spacing: { after: 0 },
       children: [
         new TextRun({ text: "CRM-PE 31277", size: 20, color: GREEN, font: "Calibri" }),
+      ],
+    })
+  );
+
+  // Local e data (abaixo do nome/CRM)
+  bodyChildren.push(
+    new Paragraph({
+      alignment: AlignmentType.CENTER,
+      spacing: { before: 200 },
+      children: [
+        new TextRun({ text: `Palmares-PE, ${data}`, size: 22, font: "Calibri" }),
       ],
     })
   );

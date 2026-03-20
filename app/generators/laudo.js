@@ -202,15 +202,6 @@ async function gerarLaudo(dados, outputPath) {
       alignment: AlignmentType.CENTER,
       spacing: { after: 40 },
       children: [
-        new TextRun({ text: `Palmares-PE, ${data}`, size: 20, font: "Calibri" }),
-      ],
-    })
-  );
-  bodyChildren.push(
-    new Paragraph({
-      alignment: AlignmentType.CENTER,
-      spacing: { after: 40 },
-      children: [
         new TextRun({ text: "_______________________________", size: 22, font: "Calibri" }),
       ],
     })
@@ -236,8 +227,20 @@ async function gerarLaudo(dados, outputPath) {
   bodyChildren.push(
     new Paragraph({
       alignment: AlignmentType.CENTER,
+      spacing: { after: 0 },
       children: [
         new TextRun({ text: "CRM-PE 31277", size: 20, color: GREEN, font: "Calibri" }),
+      ],
+    })
+  );
+
+  // Local e data (abaixo do nome/CRM)
+  bodyChildren.push(
+    new Paragraph({
+      alignment: AlignmentType.CENTER,
+      spacing: { before: 200 },
+      children: [
+        new TextRun({ text: `Palmares-PE, ${data}`, size: 20, font: "Calibri" }),
       ],
     })
   );
