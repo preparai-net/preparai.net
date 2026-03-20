@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FisioMED - Gerador de Documentos</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <img src="../assets/LOGO_FISIOMED.png" alt="FisioMED">
+  <h1>Gerador de Documentos Médicos</h1>
+  <p>Dr. Eduardo Soares de Carvalho — CRM-PE 31277</p>
+</div>
+
+<div class="container">
+
+  <!-- ERRO -->
+  <div id="errorMsg" class="error-msg"></div>
+
+  <form id="mainForm" autocomplete="off">
+
+    <!-- ====== BLOCO 1 — DADOS DO PACIENTE ====== -->
+    <div class="section">
+      <div class="section-title">1. Dados do Paciente</div>
+      <div class="grid-2">
+        <div class="field field-highlight">
+          <label for="nome_paciente">Nome completo *</label>
+          <input type="text" id="nome_paciente" name="nome_paciente" required placeholder="NOME COMPLETO DO PACIENTE">
+        </div>
+        <div class="field">
+          <label for="data">Data da consulta *</label>
+          <input type="date" id="data" name="data" required>
+        </div>
+      </div>
+    </div>
+
+    <!-- ====== BLOCO 2 — DIAGNÓSTICO ====== -->
+    <div class="section">
+      <div class="section-title">2. Diagnóstico</div>
+      <div class="grid-2">
+        <div class="field autocomplete-wrapper">
+          <label for="diagnostico1">Diagnóstico 1 *</label>
+          <input type="text" id="diagnostico1" placeholder="Digite para buscar..." required>
+          <div id="ac_diag1" class="autocomplete-list"></div>
+        </div>
+        <div class="field">
+          <label for="cid1">CID 1</label>
+          <input type="text" id="cid1" placeholder="Preenchido automaticamente">
+        </div>
+        <div class="field autocomplete-wrapper">
+          <label for="diagnostico2">Diagnóstico 2 (opcional)</label>
+          <input type="text" id="diagnostico2" placeholder="Digite para buscar...">
+          <div id="ac_diag2" class="autocomplete-list"></div>
+        </div>
+        <div class="field">
+          <label for="cid2">CID 2</label>
+          <input type="text" id="cid2" placeholder="Preenchido automaticamente">
+        </div>
+        <div class="field">
+          <label for="membro">Membro afetado</label>
+          <select id="membro">
+            <option value="N/A">N/A</option>
+            <option value="DIREITO">DIREITO</option>
+            <option value="ESQUERDO">ESQUERDO</option>
+            <option value="BILATERAL">BILATERAL</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="regiao">Região afetada</label>
+          <input type="text" id="regiao" placeholder="Ex: JOELHO ESQUERDO">
+        </div>
+        <div class="field full-width">
+          <label for="observacao_clinica">Observação clínica (opcional)</label>
+          <textarea id="observacao_clinica" placeholder="Ex: pós-operatório, reabilitação..."></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- ====== BLOCO 3 — APACs ====== -->
+    <div class="section">
+      <div class="section-title">3. APACs a Gerar</div>
+
+      <!-- RETORNO — sempre ativo -->
+      <div class="check-group">
+        <div class="check-header locked">
+          <input type="checkbox" id="apac_retorno" checked disabled>
+          <span class="check-label">RETORNO ORTOPEDIA <span class="check-label-sub">(sempre gerado)</span></span>
+        </div>
+        <div class="check-expand open">
+          <div class="field">
+            <label>Justificativa</label>
+            <textarea id="apac_retorno_just" rows="2"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- FISIOTERAPIA -->
+      <div class="check-group">
+        <div class="check-header" onclick="toggleCheck('apac_fisio')">
+          <input type="checkbox" id="apac_fisio">
+          <span class="check-label">FISIOTERAPIA</span>
+        </div>
+        <div class="check-expand" id="apac_fisio_expand">
+          <div class="field">
+            <label>Região</label>
+            <input type="text" id="apac_fisio_regiao">
+          </div>
+          <div class="field">
+            <label>Justificativa</label>
+            <textarea id="apac_fisio_just" rows="2"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- RMN -->
+      <div class="check-group">
+        <div class="check-header" onclick="toggleCheck('apac_rmn')">
+          <input type="checkbox" id="apac_rmn">
+          <span class="check-label">RMN SEM CONTRASTE</span>
+        </div>
+        <div class="check-expand" id="apac_rmn_expand">
+          <div class="field">
+            <label>Região</label>
+            <input type="text" id="apac_rmn_regiao">
+          </div>
+          <div class="field">
+            <label>Justificativa</label>
+            <textarea id="apac_rmn_just" rows="2"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- RADIOGRAFIA -->
+      <div class="check-group">
+        <div class="check-header" onclick="toggleCheck('apac_rx')">
+          <input type="checkbox" id="apac_rx">
+          <span class="check-label">RADIOGRAFIA</span>
+        </div>
+        <div class="check-expand" id="apac_rx_expand">
+          <div class="field">
+            <label>Região</label>
+            <input type="text" id="apac_rx_regiao">
+          </div>
+          <div class="field">
+            <label>Incidência</label>
+            <select id="apac_rx_incidencia">
+              <option value="AP E PERFIL">AP E PERFIL</option>
+              <option value="AP">AP</option>
+              <option value="PERFIL">PERFIL</option>
+              <option value="AXIAL">AXIAL</option>
+              <option value="OUTRA">OUTRA</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Justificativa</label>
+            <textarea id="apac_rx_just" rows="2"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- USG -->
+      <div class="check-group">
+        <div class="check-header" onclick="toggleCheck('apac_usg')">
+          <input type="checkbox" id="apac_usg">
+          <span class="check-label">USG</span>
+        </div>
+        <div class="check-expand" id="apac_usg_expand">
+          <div class="field">
+            <label>Região</label>
+            <input type="text" id="apac_usg_regiao">
+          </div>
+          <div class="field">
+            <label>Justificativa</label>
+            <textarea id="apac_usg_just" rows="2"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- TC -->
+      <div class="check-group">
+        <div class="check-header" onclick="toggleCheck('apac_tc')">
+          <input type="checkbox" id="apac_tc">
+          <span class="check-label">TC (Tomografia)</span>
+        </div>
+        <div class="check-expand" id="apac_tc_expand">
+          <div class="field">
+            <label>Região</label>
+            <input type="text" id="apac_tc_regiao">
+          </div>
+          <div class="field">
+            <label>Justificativa</label>
+            <textarea id="apac_tc_just" rows="2"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- CONSULTA ESPECIALIZADA -->
+      <div class="check-group">
+        <div class="check-header" onclick="toggleCheck('apac_consulta')">
+          <input type="checkbox" id="apac_consulta">
+          <span class="check-label">CONSULTA ESPECIALIZADA</span>
+        </div>
+        <div class="check-expand" id="apac_consulta_expand">
+          <div class="field">
+            <label>Especialidade</label>
+            <input type="text" id="apac_consulta_esp" placeholder="Ex: NUTRICIONISTA">
+          </div>
+          <div class="field">
+            <label>Justificativa</label>
+            <textarea id="apac_consulta_just" rows="2"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- OUTRA APAC -->
+      <div class="check-group">
+        <div class="check-header" onclick="toggleCheck('apac_outra')">
+          <input type="checkbox" id="apac_outra">
+          <span class="check-label">OUTRA APAC</span>
+        </div>
+        <div class="check-expand" id="apac_outra_expand">
+          <div class="field">
+            <label>Procedimento</label>
+            <input type="text" id="apac_outra_proc" placeholder="Nome do procedimento">
+          </div>
+          <div class="field">
+            <label>Justificativa</label>
+            <textarea id="apac_outra_just" rows="2"></textarea>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ====== BLOCO 4 — RECEITA SIMPLES ====== -->
+    <div class="section">
+      <div class="section-title">4. Receita Simples</div>
+      <div id="receita_simples_list"></div>
+    </div>
+
+    <!-- ====== BLOCO 5 — RECEITA ESPECIAL ====== -->
+    <div class="section">
+      <div class="section-title">5. Receita Especial (Controle Especial)</div>
+      <div id="receita_especial_list"></div>
+    </div>
+
+    <!-- ====== BLOCO 6 — ATESTADO ====== -->
+    <div class="section">
+      <div class="section-title">6. Atestado</div>
+      <div class="check-group">
+        <div class="check-header" onclick="toggleCheck('atestado_ativo')">
+          <input type="checkbox" id="atestado_ativo">
+          <span class="check-label">Gerar atestado?</span>
+        </div>
+        <div class="check-expand" id="atestado_ativo_expand">
+          <div class="field">
+            <label for="atestado_dias">Número de dias</label>
+            <input type="number" id="atestado_dias" min="1" max="30" value="1">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ====== BLOCO 7 — LAUDO ====== -->
+    <div class="section">
+      <div class="section-title">7. Laudo Médico</div>
+      <div class="check-group">
+        <div class="check-header" onclick="toggleCheck('laudo_ativo')">
+          <input type="checkbox" id="laudo_ativo">
+          <span class="check-label">Gerar laudo?</span>
+        </div>
+        <div class="check-expand" id="laudo_ativo_expand">
+          <div class="field">
+            <label for="laudo_texto">Texto do laudo</label>
+            <textarea id="laudo_texto" rows="8" placeholder="Cole aqui o texto completo do laudo..."></textarea>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- BOTÃO -->
+    <button type="submit" class="btn-generate" id="btnGerar">GERAR DOCUMENTOS</button>
+
+  </form>
+</div>
+
+<!-- OVERLAY -->
+<div class="overlay" id="overlay">
+  <div class="overlay-content">
+    <div class="spinner"></div>
+    <p>Gerando documentos...</p>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<div class="footer">
+  FisioMED &copy; 2026 — Todos os direitos reservados
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
