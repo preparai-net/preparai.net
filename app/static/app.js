@@ -328,9 +328,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const dataInput = document.getElementById('data');
   dataInput.value = hoje.toISOString().split('T')[0];
 
-  // Autocomplete diagnósticos
+  // Autocomplete diagnóstico
   setupAutocomplete('diagnostico1', 'ac_diag1', 'cid1');
-  setupAutocomplete('diagnostico2', 'ac_diag2', 'cid2');
 
   // Preencher justificativa retorno
   updateJustificativas();
@@ -342,8 +341,9 @@ document.addEventListener('DOMContentLoaded', () => {
   renderMedicamentos('receita_simples_list', MEDS_SIMPLES, 'rs');
   renderMedicamentos('receita_especial_list', MEDS_ESPECIAIS, 're');
 
-  // Adicionar "OUTRO MEDICAMENTO" na receita simples
+  // Adicionar "OUTRO MEDICAMENTO" nas receitas
   renderOutroMedicamento('receita_simples_list', 'rs');
+  renderOutroMedicamento('receita_especial_list', 're');
 
   // Submit
   document.getElementById('mainForm').addEventListener('submit', handleSubmit);
@@ -572,9 +572,6 @@ function collectData() {
   // Diagnóstico
   const diagnostico1 = document.getElementById('diagnostico1').value.trim();
   const cid1 = document.getElementById('cid1').value.trim();
-  const diagnostico2 = document.getElementById('diagnostico2').value.trim();
-  const cid2 = document.getElementById('cid2').value.trim();
-  const membro = document.getElementById('membro').value;
   const regiao = document.getElementById('regiao').value.trim().toUpperCase();
   const observacao_clinica = document.getElementById('observacao_clinica').value.trim();
 
@@ -660,6 +657,17 @@ function collectData() {
       });
     }
   });
+  // Outro medicamento especial
+  if (document.getElementById('re_outro').checked) {
+    const outroNome = document.getElementById('re_outro_nome').value.trim().toUpperCase();
+    if (outroNome) {
+      receita_especial.push({
+        nome: outroNome,
+        posologia: document.getElementById('re_outro_pos').value.trim(),
+        quantidade: document.getElementById('re_outro_qtd').value.trim()
+      });
+    }
+  }
 
   // Atestado
   const atestado = {
@@ -678,9 +686,6 @@ function collectData() {
     data,
     diagnostico1,
     cid1,
-    diagnostico2,
-    cid2,
-    membro,
     regiao,
     observacao_clinica,
     apacs,

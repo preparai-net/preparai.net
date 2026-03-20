@@ -61,8 +61,6 @@ async def gerar_documentos(request: Request):
     data = dados.get("data", "")
     diag1 = dados.get("diagnostico1", "")
     cid1 = dados.get("cid1", "")
-    diag2 = dados.get("diagnostico2", "")
-    cid2 = dados.get("cid2", "")
     regiao = dados.get("regiao", "").strip().upper()
     observacao = dados.get("observacao_clinica", "")
     apacs = dados.get("apacs", {})
