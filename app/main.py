@@ -39,7 +39,14 @@ class AuthMiddleware(BaseHTTPMiddleware):
                 # Redirecionar para login
                 return RedirectResponse(url="/login", status_code=302)
 
-        return await call_next(request)
+        response = await call_next(request)
+
+        # Evitar cache de arquivos estáticos (JS/CSS/HTML)
+        if path.startswith("/fisiomed") and not path.startswith("/fisiomed/assets/"):
+            response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+            response.headers["Pragma"] = "no-cache"
+
+        return response
 
 app.add_middleware(AuthMiddleware)
 app.include_router(gerar_router)
