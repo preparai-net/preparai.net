@@ -15,6 +15,7 @@
   <img src="../assets/LOGO_FISIOMED.png" alt="FisioMED">
   <h1>Gerador de Documentos Médicos</h1>
   <p>Dr. Eduardo Soares de Carvalho — CRM-PE 31277</p>
+  <a href="/auth/logout" class="btn-logout" title="Sair">Sair</a>
 </div>
 
 <div class="container">
@@ -229,6 +230,37 @@
           <div class="field">
             <label>Justificativa</label>
             <textarea id="apac_outra_just" rows="2"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- APAC COM OUTRO CID -->
+      <div class="check-group">
+        <div class="check-header" onclick="toggleCheck('apac_outrocid')">
+          <input type="checkbox" id="apac_outrocid">
+          <span class="check-label">APAC COM OUTRO CID</span>
+        </div>
+        <div class="check-expand" id="apac_outrocid_expand">
+          <div class="field">
+            <label>Diagnóstico</label>
+            <input type="text" id="apac_outrocid_diag" placeholder="Digite para buscar..." autocomplete="off">
+            <div class="dropdown-list" id="apac_outrocid_diag_list"></div>
+          </div>
+          <div class="field">
+            <label>CID</label>
+            <input type="text" id="apac_outrocid_cid" readonly>
+          </div>
+          <div class="field">
+            <label>Procedimento</label>
+            <input type="text" id="apac_outrocid_proc" placeholder="Nome do procedimento">
+          </div>
+          <div class="field">
+            <label>Região</label>
+            <input type="text" id="apac_outrocid_regiao">
+          </div>
+          <div class="field">
+            <label>Justificativa</label>
+            <textarea id="apac_outrocid_just" rows="2"></textarea>
           </div>
         </div>
       </div>

@@ -328,8 +328,11 @@ document.addEventListener('DOMContentLoaded', () => {
   const dataInput = document.getElementById('data');
   dataInput.value = hoje.toISOString().split('T')[0];
 
-  // Autocomplete diagnóstico
+  // Autocomplete diagnóstico principal
   setupAutocomplete('diagnostico1', 'ac_diag1', 'cid1');
+
+  // Autocomplete diagnóstico - APAC com outro CID
+  setupAutocomplete('apac_outrocid_diag', 'apac_outrocid_diag_list', 'apac_outrocid_cid');
 
   // Preencher justificativa retorno
   updateJustificativas();
@@ -647,6 +650,14 @@ function collectData() {
       ativo: document.getElementById('apac_outra').checked,
       procedimento: (document.getElementById('apac_outra_proc').value || '').trim().toUpperCase(),
       justificativa: (document.getElementById('apac_outra_just').value || '').trim()
+    },
+    outrocid: {
+      ativo: document.getElementById('apac_outrocid').checked,
+      diagnostico: (document.getElementById('apac_outrocid_diag').value || '').trim(),
+      cid: (document.getElementById('apac_outrocid_cid').value || '').trim(),
+      procedimento: (document.getElementById('apac_outrocid_proc').value || '').trim().toUpperCase(),
+      regiao: (document.getElementById('apac_outrocid_regiao').value || '').trim().toUpperCase(),
+      justificativa: (document.getElementById('apac_outrocid_just').value || '').trim()
     }
   };
 

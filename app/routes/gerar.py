@@ -181,6 +181,14 @@ async def gerar_documentos(request: Request):
                 "quantidade": "01",
                 "incidencia_rx": "",
             }),
+            ("outrocid", lambda a: {
+                "procedimento": a.get("procedimento", ""),
+                "regiao": resolve_regiao(a.get("regiao", "")) or regiao,
+                "quantidade": "01",
+                "incidencia_rx": "",
+                "diagnostico_override": a.get("diagnostico", ""),
+                "cid_override": a.get("cid", ""),
+            }),
         ]
 
         for apac_type, config_fn in apac_configs:
@@ -194,13 +202,17 @@ async def gerar_documentos(request: Request):
                 if not just:
                     just = default_justificativa(apac_type, cfg["regiao"])
 
+                # APAC com outro CID usa diagnóstico/CID próprios
+                apac_diag = cfg.get("diagnostico_override") or diag1
+                apac_cid = cfg.get("cid_override") or cid1
+
                 docx_path = next_path(f"APAC_{apac_type.upper()}") + ".docx"
                 gerar_apac(
                     output_path=docx_path,
                     nome_paciente=nome,
                     data=data,
-                    diagnostico=diag1,
-                    cid=cid1,
+                    diagnostico=apac_diag,
+                    cid=apac_cid,
                     regiao=cfg["regiao"],
                     procedimento=cfg["procedimento"],
                     justificativa=just,

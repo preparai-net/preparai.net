@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FisioMED - Login</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --green: #2E5D34;
+      --green-light: #3a7542;
+      --green-dark: #1e3f23;
+      --bg: #F5F5F5;
+      --white: #FFFFFF;
+      --gray-200: #e0e0e0;
+      --gray-900: #222222;
+      --red: #d32f2f;
+      --radius: 8px;
+      --shadow: 0 2px 8px rgba(0,0,0,.08);
+    }
+    body {
+      font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--gray-900);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+    }
+    .login-card {
+      background: var(--white);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 2.5rem 2rem;
+      width: 100%;
+      max-width: 380px;
+      text-align: center;
+    }
+    .login-card img {
+      max-width: 180px;
+      margin-bottom: 1.5rem;
+    }
+    .login-card h1 {
+      font-size: 1.3rem;
+      color: var(--green);
+      margin-bottom: 1.5rem;
+    }
+    .field {
+      margin-bottom: 1rem;
+      text-align: left;
+    }
+    .field label {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-bottom: 0.3rem;
+      color: var(--green);
+    }
+    .field input {
+      width: 100%;
+      padding: 0.6rem 0.8rem;
+      border: 1px solid var(--gray-200);
+      border-radius: var(--radius);
+      font-size: 0.95rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .field input:focus {
+      border-color: var(--green);
+    }
+    .error-msg {
+      color: var(--red);
+      font-size: 0.85rem;
+      margin-bottom: 1rem;
+      display: none;
+    }
+    .btn {
+      width: 100%;
+      padding: 0.7rem;
+      background: var(--green);
+      color: white;
+      border: none;
+      border-radius: var(--radius);
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .btn:hover {
+      background: var(--green-light);
+    }
+    .btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+  </style>
+</head>
+<body>
+  <div class="login-card">
+    <img src="/fisiomed/assets/LOGO_FISIOMED.png" alt="FisioMED">
+    <h1>Acesso ao Sistema</h1>
+    <form id="loginForm">
+      <div class="field">
+        <label>Usuário</label>
+        <input type="text" id="username" autocomplete="username" required>
+      </div>
+      <div class="field">
+        <label>Senha</label>
+        <input type="password" id="password" autocomplete="current-password" required>
+      </div>
+      <div class="error-msg" id="errorMsg">Usuário ou senha incorretos.</div>
+      <button type="submit" class="btn" id="btnLogin">ENTRAR</button>
+    </form>
+  </div>
+  <script>
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('btnLogin');
+      const errorMsg = document.getElementById('errorMsg');
+      btn.disabled = true;
+      errorMsg.style.display = 'none';
+
+      try {
+        const resp = await fetch('/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            username: document.getElementById('username').value.trim(),
+            password: document.getElementById('password').value
+          })
+        });
+
+        if (resp.ok) {
+          window.location.href = '/fisiomed';
+        } else {
+          errorMsg.style.display = 'block';
+        }
+      } catch (err) {
+        errorMsg.textContent = 'Erro de conexão. Tente novamente.';
+        errorMsg.style.display = 'block';
+      }
+      btn.disabled = false;
+    });
+  </script>
+</body>
+</html>
