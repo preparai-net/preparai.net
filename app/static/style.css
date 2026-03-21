@@ -219,7 +219,7 @@ body {
   flex-shrink: 0;
 }
 .med-info { flex: 1; }
-.med-name { font-weight: 600; font-size: .9rem; }
+.med-name { font-weight: 600; font-size: .9rem; cursor: pointer; user-select: none; }
 .med-expand {
   display: none;
   margin-top: 8px;

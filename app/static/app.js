@@ -502,9 +502,9 @@ function renderMedicamentos(containerId, meds, prefix) {
     const div = document.createElement('div');
     div.className = 'med-item';
     div.innerHTML = `
-      <input type="checkbox" id="${id}" onclick="toggleMedExpand('${id}')">
+      <input type="checkbox" id="${id}">
       <div class="med-info">
-        <div class="med-name">${med.nome}</div>
+        <div class="med-name" onclick="toggleMedExpand('${id}')">${med.nome}</div>
         <div class="med-expand" id="${id}_expand">
           <div class="field">
             <label>Posologia</label>
@@ -517,6 +517,8 @@ function renderMedicamentos(containerId, meds, prefix) {
         </div>
       </div>
     `;
+    // Clicar no checkbox também expande
+    div.querySelector(`#${id}`).addEventListener('change', () => toggleMedExpand(id));
     container.appendChild(div);
   });
 }
@@ -527,9 +529,9 @@ function renderOutroMedicamento(containerId, prefix) {
   const div = document.createElement('div');
   div.className = 'med-item';
   div.innerHTML = `
-    <input type="checkbox" id="${id}" onclick="toggleMedExpand('${id}')">
+    <input type="checkbox" id="${id}">
     <div class="med-info">
-      <div class="med-name">OUTRO MEDICAMENTO</div>
+      <div class="med-name" onclick="toggleMedExpand('${id}')">OUTRO MEDICAMENTO</div>
       <div class="med-expand" id="${id}_expand">
         <div class="field">
           <label>Nome do medicamento</label>
@@ -546,11 +548,18 @@ function renderOutroMedicamento(containerId, prefix) {
       </div>
     </div>
   `;
+  // Clicar no checkbox também expande
+  div.querySelector(`#${id}`).addEventListener('change', () => toggleMedExpand(id));
   container.appendChild(div);
 }
 
 function toggleMedExpand(id) {
   const cb = document.getElementById(id);
+  // Se chamado pelo nome (onclick), toggle o checkbox
+  // Se chamado pelo change do checkbox, apenas sincroniza o expand
+  if (!event || event.type !== 'change') {
+    cb.checked = !cb.checked;
+  }
   const expand = document.getElementById(id + '_expand');
   if (expand) {
     expand.classList.toggle('open', cb.checked);
