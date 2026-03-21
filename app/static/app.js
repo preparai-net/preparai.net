@@ -416,6 +416,27 @@ function toggleCheck(id) {
   }
 }
 
+// ========== TOGGLE INCIDÊNCIA CUSTOMIZADA ==========
+function toggleIncidenciaCustom() {
+  const sel = document.getElementById('apac_rx_incidencia');
+  const wrap = document.getElementById('apac_rx_incidencia_custom_wrap');
+  if (sel.value === '__CUSTOM__') {
+    wrap.style.display = '';
+    document.getElementById('apac_rx_incidencia_custom').focus();
+  } else {
+    wrap.style.display = 'none';
+  }
+}
+
+// Helper: obter valor real da incidência (select ou campo customizado)
+function getIncidenciaValue() {
+  const sel = document.getElementById('apac_rx_incidencia');
+  if (sel.value === '__CUSTOM__') {
+    return document.getElementById('apac_rx_incidencia_custom').value.trim().toUpperCase() || 'AP E PERFIL';
+  }
+  return sel.value;
+}
+
 // ========== JUSTIFICATIVAS PRÉ-PREENCHIDAS ==========
 function updateJustificativas() {
   const regiao = document.getElementById('regiao').value || '[REGIÃO]';
@@ -596,13 +617,14 @@ function collectData() {
     },
     rmn: {
       ativo: document.getElementById('apac_rmn').checked,
+      contraste: document.getElementById('apac_rmn_contraste').value,
       regiao: document.getElementById('apac_rmn_regiao').value.trim().toUpperCase(),
       justificativa: document.getElementById('apac_rmn_just').value.trim()
     },
     radiografia: {
       ativo: document.getElementById('apac_rx').checked,
       regiao: document.getElementById('apac_rx_regiao').value.trim().toUpperCase(),
-      incidencia: document.getElementById('apac_rx_incidencia').value,
+      incidencia: getIncidenciaValue(),
       justificativa: document.getElementById('apac_rx_just').value.trim()
     },
     usg: {
@@ -612,6 +634,7 @@ function collectData() {
     },
     tc: {
       ativo: document.getElementById('apac_tc').checked,
+      contraste: document.getElementById('apac_tc_contraste').value,
       regiao: document.getElementById('apac_tc_regiao').value.trim().toUpperCase(),
       justificativa: document.getElementById('apac_tc_just').value.trim()
     },
@@ -658,8 +681,10 @@ function collectData() {
   MEDS_ESPECIAIS.forEach((med, i) => {
     const id = `re_${i}`;
     if (document.getElementById(id).checked) {
+      // Remove horário do nome ex: "MOBALE 75MG (12/12h)" → "MOBALE 75MG"
+      const nomeLimpo = med.nome.replace(/\s*\(\d+\/\d+h\)\s*$/i, '');
       receita_especial.push({
-        nome: med.nome,
+        nome: nomeLimpo,
         posologia: document.getElementById(`${id}_pos`).value.trim(),
         quantidade: document.getElementById(`${id}_qtd`).value.trim()
       });

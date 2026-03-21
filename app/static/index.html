@@ -99,9 +99,16 @@
       <div class="check-group">
         <div class="check-header" onclick="toggleCheck('apac_rmn')">
           <input type="checkbox" id="apac_rmn">
-          <span class="check-label">RMN SEM CONTRASTE</span>
+          <span class="check-label">RMN</span>
         </div>
         <div class="check-expand" id="apac_rmn_expand">
+          <div class="field">
+            <label>Contraste</label>
+            <select id="apac_rmn_contraste">
+              <option value="SEM CONTRASTE" selected>SEM CONTRASTE</option>
+              <option value="COM CONTRASTE">COM CONTRASTE</option>
+            </select>
+          </div>
           <div class="field">
             <label>Região</label>
             <input type="text" id="apac_rmn_regiao">
@@ -126,13 +133,19 @@
           </div>
           <div class="field">
             <label>Incidência</label>
-            <select id="apac_rx_incidencia">
+            <select id="apac_rx_incidencia" onchange="toggleIncidenciaCustom()">
               <option value="AP E PERFIL">AP E PERFIL</option>
+              <option value="AP + OBLÍQUO; PERFIL + AXIAL">AP + OBLÍQUO; PERFIL + AXIAL</option>
               <option value="AP">AP</option>
               <option value="PERFIL">PERFIL</option>
               <option value="AXIAL">AXIAL</option>
-              <option value="OUTRA">OUTRA</option>
+              <option value="OBLÍQUO">OBLÍQUO</option>
+              <option value="__CUSTOM__">OUTRA (digitar)</option>
             </select>
+          </div>
+          <div class="field" id="apac_rx_incidencia_custom_wrap" style="display:none">
+            <label>Incidência (personalizada)</label>
+            <input type="text" id="apac_rx_incidencia_custom" placeholder="Digite a incidência">
           </div>
           <div class="field">
             <label>Justificativa</label>
@@ -166,6 +179,13 @@
           <span class="check-label">TC (Tomografia)</span>
         </div>
         <div class="check-expand" id="apac_tc_expand">
+          <div class="field">
+            <label>Contraste</label>
+            <select id="apac_tc_contraste">
+              <option value="SEM CONTRASTE" selected>SEM CONTRASTE</option>
+              <option value="COM CONTRASTE">COM CONTRASTE</option>
+            </select>
+          </div>
           <div class="field">
             <label>Região</label>
             <input type="text" id="apac_tc_regiao">

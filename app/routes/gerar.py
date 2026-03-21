@@ -146,7 +146,7 @@ async def gerar_documentos(request: Request):
                 "incidencia_rx": "",
             }),
             ("rmn", lambda a: {
-                "procedimento": f"RMN SEM CONTRASTE DE {resolve_regiao(a.get('regiao', ''))}",
+                "procedimento": f"RMN {a.get('contraste', 'SEM CONTRASTE')} DE {resolve_regiao(a.get('regiao', ''))}",
                 "regiao": resolve_regiao(a.get("regiao", "")),
                 "quantidade": "01",
                 "incidencia_rx": "",
@@ -164,7 +164,7 @@ async def gerar_documentos(request: Request):
                 "incidencia_rx": "",
             }),
             ("tc", lambda a: {
-                "procedimento": f"TC DE {resolve_regiao(a.get('regiao', ''))}",
+                "procedimento": f"TC {a.get('contraste', 'SEM CONTRASTE')} DE {resolve_regiao(a.get('regiao', ''))}",
                 "regiao": resolve_regiao(a.get("regiao", "")),
                 "quantidade": "01",
                 "incidencia_rx": "",
