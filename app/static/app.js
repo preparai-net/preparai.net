@@ -5,8 +5,8 @@
 // ========== BANCO DE CIDs ==========
 const DIAGNOSTICOS = [
   { nome: "Lombalgia / Dor lombar baixa", cid: "M54.5" },
-  { nome: "Lombociatalgia / Ciática cervical", cid: "M54.3" },
-  { nome: "Lombociatalgia / Ciática lombar", cid: "M54.4" },
+  { nome: "Ciática / Dor ciática", cid: "M54.3" },
+  { nome: "Lombociatalgia / Lumbago com ciática", cid: "M54.4" },
   { nome: "Espondilose lombar", cid: "M47.8" },
   { nome: "Espondilose cervical", cid: "M47.8" },
   { nome: "Discopatia degenerativa lombar c/ radiculopatia", cid: "M51.1" },
@@ -32,7 +32,7 @@ const DIAGNOSTICOS = [
   { nome: "Epicondilite lateral", cid: "M77.1" },
   { nome: "Epicondilite medial", cid: "M77.0" },
   { nome: "Tendinite dos extensores do punho", cid: "M65.8" },
-  { nome: "Tendinite dos extensores do pé", cid: "M76.5" },
+  { nome: "Tendinite dos extensores do pé", cid: "M76.8" },
   { nome: "Tendinite patelar", cid: "M76.5" },
   { nome: "Tendinite do calcâneo (Aquiles)", cid: "M76.6" },
   { nome: "Esporão calcâneo / Fasciíte plantar", cid: "M77.3" },
