@@ -75,6 +75,20 @@ async def gerar_documentos(request: Request):
             return regiao
         return r
 
+    # Helper: montar procedimento completo para APAC com outro CID
+    def _build_outrocid_proc(proc_text, reg):
+        """Monta procedimento: 'TC' + 'COLUNA CERVICAL' → 'TC DE COLUNA CERVICAL'"""
+        proc = (proc_text or "").strip().upper()
+        reg = (reg or "").strip().upper()
+        if not proc:
+            return reg or "PROCEDIMENTO"
+        if not reg:
+            return proc
+        # Se o procedimento já contém a região, não duplicar
+        if reg in proc:
+            return proc
+        return f"{proc} DE {reg}"
+
     # Helper: sanitizar justificativa — substituir [REGIÃO] pelo valor real
     def sanitizar_justificativa(just_text):
         """Se a justificativa contém [REGIÃO], substitui pela região real."""
@@ -182,7 +196,7 @@ async def gerar_documentos(request: Request):
                 "incidencia_rx": "",
             }),
             ("outrocid", lambda a: {
-                "procedimento": a.get("procedimento", ""),
+                "procedimento": _build_outrocid_proc(a.get("procedimento", ""), resolve_regiao(a.get("regiao", "")) or regiao),
                 "regiao": resolve_regiao(a.get("regiao", "")) or regiao,
                 "quantidade": "01",
                 "incidencia_rx": "",

@@ -358,8 +358,10 @@ function setupAutocomplete(inputId, listId, cidId) {
   const list = document.getElementById(listId);
   const cidInput = document.getElementById(cidId);
   let activeIdx = -1;
+  let selecting = false;  // Flag para evitar reabrir ao selecionar
 
   input.addEventListener('input', () => {
+    if (selecting) { selecting = false; return; }
     const val = input.value.toLowerCase().trim();
     if (val.length < 2) { list.classList.remove('show'); return; }
 
@@ -376,11 +378,14 @@ function setupAutocomplete(inputId, listId, cidId) {
     activeIdx = -1;
 
     list.querySelectorAll('.autocomplete-item').forEach(item => {
-      item.addEventListener('click', () => {
+      item.addEventListener('mousedown', (e) => {
+        e.preventDefault();  // Evitar blur/refocus
         const idx = parseInt(item.dataset.idx);
+        selecting = true;
         input.value = filtered[idx].nome;
         cidInput.value = filtered[idx].cid;
         list.classList.remove('show');
+        list.innerHTML = '';
       });
     });
   });
