@@ -301,6 +301,7 @@ const MEDS_SIMPLES = [
   { nome: "PARACETAMOL 500MG", posologia: "TOMAR 01 COMPRIMIDO VIA ORAL DE 8/8H POR 03 DIAS", qtd: "01 CX", tipo: "oral" },
   { nome: "KETALGI 500MG", posologia: "TOMAR 01 COMPRIMIDO VIA ORAL DE 12/12H POR 05 DIAS", qtd: "01 CX", tipo: "oral" },
   { nome: "MIOSAN CAF 10MG", posologia: "TOMAR 01 COMPRIMIDO VIA ORAL DE 12/12H POR 03 DIAS", qtd: "01 CX", tipo: "oral" },
+  { nome: "ALONG-C", posologia: "TOMAR 01 COMPRIMIDO VIA ORAL DE 24/24H", qtd: "01 CX", tipo: "oral" },
   { nome: "BEMOVE CURCUMA", posologia: "TOMAR 01 COMPRIMIDO VIA ORAL DE 24/24H", qtd: "01 CX", tipo: "oral" },
   { nome: "LISADOR DIP 1G", posologia: "TOMAR 01 COMPRIMIDO VIA ORAL DE 6/6H POR 05 DIAS", qtd: "01 CX", tipo: "oral" }
 ];
