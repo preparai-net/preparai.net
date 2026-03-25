@@ -69,6 +69,13 @@ body {
   color: var(--gray-500);
 }
 
+/* ========== CONFIG SECTION ========== */
+.config-section { border: 1px dashed var(--gray-300); background: var(--gray-100); }
+.config-toggle { cursor: pointer; user-select: none; }
+.config-arrow { float: right; font-size: 0.7rem; transition: transform 0.2s; }
+.config-expand { max-height: 0; overflow: hidden; transition: max-height 0.3s ease; }
+.config-expand.open { max-height: 300px; }
+
 /* ========== CONTAINER ========== */
 .container {
   max-width: 960px;

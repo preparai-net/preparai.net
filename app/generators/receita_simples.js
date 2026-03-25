@@ -37,7 +37,13 @@ async function gerarReceitaSimples(dados, outputPath) {
     data,
     medicamentos, // array de { nome, posologia, quantidade }
     tipo_uso,     // "USO ORAL" ou "USO INTRAMUSCULAR"
+    config = {},
   } = dados;
+
+  // Configurações dinâmicas do carimbo
+  const cfgMedico = config.medico || "Dr. Eduardo Soares de Carvalho";
+  const cfgEspecialidade = config.especialidade || "Ortopedia e Traumatologia";
+  const cfgCrm = config.crm || "CRM-PE 31277";
 
   // Ler imagens
   const logoData = fs.readFileSync(path.join(ASSETS_DIR, "LOGO_FISIOMED.png"));
@@ -61,7 +67,7 @@ async function gerarReceitaSimples(dados, outputPath) {
       spacing: { after: 0 },
       children: [
         new TextRun({
-          text: "Dr. Eduardo Soares de Carvalho",
+          text: cfgMedico,
           bold: true,
           size: 22,
           color: GREEN,
@@ -74,7 +80,7 @@ async function gerarReceitaSimples(dados, outputPath) {
       spacing: { after: 0 },
       children: [
         new TextRun({
-          text: "Ortopedia e Traumatologia",
+          text: cfgEspecialidade,
           size: 20,
           color: GREEN,
           font: "Calibri",
@@ -86,7 +92,7 @@ async function gerarReceitaSimples(dados, outputPath) {
       spacing: { after: 80 },
       children: [
         new TextRun({
-          text: "CRM-PE 31277",
+          text: cfgCrm,
           size: 20,
           color: GREEN,
           font: "Calibri",
@@ -278,7 +284,7 @@ async function gerarReceitaSimples(dados, outputPath) {
       spacing: { after: 0 },
       children: [
         new TextRun({
-          text: "Dr. Eduardo Soares de Carvalho",
+          text: cfgMedico,
           bold: true,
           size: 20,
           font: "Calibri",
@@ -293,7 +299,7 @@ async function gerarReceitaSimples(dados, outputPath) {
       spacing: { after: 0 },
       children: [
         new TextRun({
-          text: "Ortopedia e Traumatologia",
+          text: cfgEspecialidade,
           size: 20,
           font: "Calibri",
           color: GREEN,
@@ -306,7 +312,7 @@ async function gerarReceitaSimples(dados, outputPath) {
       alignment: AlignmentType.CENTER,
       children: [
         new TextRun({
-          text: "CRM-PE 31277",
+          text: cfgCrm,
           size: 20,
           font: "Calibri",
           color: GREEN,

@@ -22,7 +22,8 @@ def gerar_apac(
     justificativa: str,
     quantidade: str = "01",
     incidencia_rx: str = "",
-    temp_dir: str = "/tmp"
+    temp_dir: str = "/tmp",
+    clinica: str = "FISIOMED"
 ):
     """
     Gera uma APAC individual.
@@ -75,8 +76,8 @@ def gerar_apac(
         # cp:contentStatus → INCIDÊNCIA (só para RX)
         core = _replace_tag_content(core, 'cp:contentStatus', incidencia_rx)
 
-        # dc:creator → FISIOMED
-        core = _replace_tag_content(core, 'dc:creator', 'FISIOMED')
+        # dc:creator → Nome da clínica (dinâmico)
+        core = _replace_tag_content(core, 'dc:creator', clinica)
 
         # dc:description → QUANTIDADE
         core = _replace_tag_content(core, 'dc:description', quantidade)
@@ -117,8 +118,8 @@ def gerar_apac(
             nome_paciente
         )
 
-        # Nome da clínica
-        doc = doc.replace('NOME DA CLÍNICA', 'FISIOMED')
+        # Nome da clínica (dinâmico)
+        doc = doc.replace('NOME DA CLÍNICA', clinica)
 
         # Diagnóstico principal (placeholder no app.xml já tratado)
         doc = doc.replace(

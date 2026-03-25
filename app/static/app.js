@@ -730,6 +730,14 @@ function collectData() {
     texto: document.getElementById('laudo_texto').value.trim()
   };
 
+  // Configurações (clínica / carimbo)
+  const config = {
+    clinica: (document.getElementById('cfg_clinica').value || 'FISIOMED').trim(),
+    medico: (document.getElementById('cfg_medico').value || 'Dr. Eduardo Soares de Carvalho').trim(),
+    especialidade: (document.getElementById('cfg_especialidade').value || 'Ortopedia e Traumatologia').trim(),
+    crm: (document.getElementById('cfg_crm').value || 'CRM-PE 31277').trim()
+  };
+
   return {
     nome_paciente: nome,
     data,
@@ -740,7 +748,8 @@ function collectData() {
     receita_simples,
     receita_especial,
     atestado,
-    laudo
+    laudo,
+    config
   };
 }
 

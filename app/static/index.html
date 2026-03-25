@@ -6,7 +6,7 @@
   <title>FisioMED - Gerador de Documentos</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=3">
+  <link rel="stylesheet" href="style.css?v=4">
 </head>
 <body>
 
@@ -24,6 +24,34 @@
   <div id="errorMsg" class="error-msg"></div>
 
   <form id="mainForm" autocomplete="off">
+
+    <!-- ====== CONFIGURAÇÕES — CLÍNICA E CARIMBO ====== -->
+    <div class="section config-section">
+      <div class="section-title config-toggle" onclick="document.getElementById('configExpand').classList.toggle('open')">
+        &#9881; Configurações (Clínica / Carimbo)
+        <span class="config-arrow">&#9660;</span>
+      </div>
+      <div id="configExpand" class="config-expand">
+        <div class="grid-2">
+          <div class="field full-width">
+            <label for="cfg_clinica">Nome da Clínica</label>
+            <input type="text" id="cfg_clinica" value="FISIOMED">
+          </div>
+          <div class="field full-width">
+            <label for="cfg_medico">Nome do Médico (carimbo)</label>
+            <input type="text" id="cfg_medico" value="Dr. Eduardo Soares de Carvalho">
+          </div>
+          <div class="field">
+            <label for="cfg_especialidade">Especialidade</label>
+            <input type="text" id="cfg_especialidade" value="Ortopedia e Traumatologia">
+          </div>
+          <div class="field">
+            <label for="cfg_crm">CRM</label>
+            <input type="text" id="cfg_crm" value="CRM-PE 31277">
+          </div>
+        </div>
+      </div>
+    </div>
 
     <!-- ====== BLOCO 1 — DADOS DO PACIENTE ====== -->
     <div class="section">
@@ -331,6 +359,6 @@
   FisioMED &copy; 2026 — Todos os direitos reservados
 </div>
 
-<script src="app.js?v=3"></script>
+<script src="app.js?v=4"></script>
 </body>
 </html>

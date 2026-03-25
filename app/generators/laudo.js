@@ -27,7 +27,12 @@ const ASSETS_DIR = path.join(__dirname, "..", "assets");
 const GREEN = "2E5D34";
 
 async function gerarLaudo(dados, outputPath) {
-  const { nome_paciente, data, texto_laudo } = dados;
+  const { nome_paciente, data, texto_laudo, config = {} } = dados;
+
+  // Configurações dinâmicas do carimbo
+  const cfgMedico = config.medico || "Dr. Eduardo Soares de Carvalho";
+  const cfgEspecialidade = config.especialidade || "Ortopedia e Traumatologia";
+  const cfgCrm = config.crm || "CRM-PE 31277";
 
   const logoData = fs.readFileSync(path.join(ASSETS_DIR, "LOGO_FISIOMED.png"));
   const rodapeData = fs.readFileSync(path.join(ASSETS_DIR, "RODAPE_FISIOMED.png"));
@@ -58,21 +63,21 @@ async function gerarLaudo(dados, outputPath) {
       alignment: AlignmentType.CENTER,
       spacing: { after: 0 },
       children: [
-        new TextRun({ text: "Dr. Eduardo Soares de Carvalho", bold: true, size: 22, color: GREEN, font: "Calibri" }),
+        new TextRun({ text: cfgMedico, bold: true, size: 22, color: GREEN, font: "Calibri" }),
       ],
     }),
     new Paragraph({
       alignment: AlignmentType.CENTER,
       spacing: { after: 0 },
       children: [
-        new TextRun({ text: "Ortopedia e Traumatologia", size: 20, color: GREEN, font: "Calibri" }),
+        new TextRun({ text: cfgEspecialidade, size: 20, color: GREEN, font: "Calibri" }),
       ],
     }),
     new Paragraph({
       alignment: AlignmentType.CENTER,
       spacing: { after: 80 },
       children: [
-        new TextRun({ text: "CRM-PE 31277", size: 20, color: GREEN, font: "Calibri" }),
+        new TextRun({ text: cfgCrm, size: 20, color: GREEN, font: "Calibri" }),
       ],
     }),
     new Paragraph({
@@ -211,7 +216,7 @@ async function gerarLaudo(dados, outputPath) {
       alignment: AlignmentType.CENTER,
       spacing: { after: 0 },
       children: [
-        new TextRun({ text: "Dr. Eduardo Soares de Carvalho", bold: true, size: 20, color: GREEN, font: "Calibri" }),
+        new TextRun({ text: cfgMedico, bold: true, size: 20, color: GREEN, font: "Calibri" }),
       ],
     })
   );
@@ -220,7 +225,7 @@ async function gerarLaudo(dados, outputPath) {
       alignment: AlignmentType.CENTER,
       spacing: { after: 0 },
       children: [
-        new TextRun({ text: "Ortopedia e Traumatologia", size: 20, color: GREEN, font: "Calibri" }),
+        new TextRun({ text: cfgEspecialidade, size: 20, color: GREEN, font: "Calibri" }),
       ],
     })
   );
@@ -229,7 +234,7 @@ async function gerarLaudo(dados, outputPath) {
       alignment: AlignmentType.CENTER,
       spacing: { after: 0 },
       children: [
-        new TextRun({ text: "CRM-PE 31277", size: 20, color: GREEN, font: "Calibri" }),
+        new TextRun({ text: cfgCrm, size: 20, color: GREEN, font: "Calibri" }),
       ],
     })
   );

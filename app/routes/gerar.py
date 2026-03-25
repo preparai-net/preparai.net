@@ -68,6 +68,13 @@ async def gerar_documentos(request: Request):
     atestado = dados.get("atestado", {})
     laudo = dados.get("laudo", {})
 
+    # Configurações dinâmicas (clínica / carimbo)
+    config = dados.get("config", {})
+    cfg_clinica = config.get("clinica", "FISIOMED").strip() or "FISIOMED"
+    cfg_medico = config.get("medico", "Dr. Eduardo Soares de Carvalho").strip() or "Dr. Eduardo Soares de Carvalho"
+    cfg_especialidade = config.get("especialidade", "Ortopedia e Traumatologia").strip() or "Ortopedia e Traumatologia"
+    cfg_crm = config.get("crm", "CRM-PE 31277").strip() or "CRM-PE 31277"
+
     # Helper: resolver região de APAC (fallback para região principal)
     def resolve_regiao(apac_regiao):
         r = (apac_regiao or "").strip().upper()
@@ -144,7 +151,8 @@ async def gerar_documentos(request: Request):
             procedimento="RETORNO ORTOPEDIA",
             justificativa=retorno_just,
             quantidade="01",
-            temp_dir=temp_dir
+            temp_dir=temp_dir,
+            clinica=cfg_clinica
         )
         pdf_path = convert_to_pdf(docx_path, temp_dir)
         pdf_list.append(pdf_path)
@@ -232,7 +240,8 @@ async def gerar_documentos(request: Request):
                     justificativa=just,
                     quantidade=cfg["quantidade"],
                     incidencia_rx=cfg.get("incidencia_rx", ""),
-                    temp_dir=temp_dir
+                    temp_dir=temp_dir,
+                    clinica=cfg_clinica
                 )
                 pdf_path = convert_to_pdf(docx_path, temp_dir)
                 pdf_list.append(pdf_path)
@@ -252,7 +261,8 @@ async def gerar_documentos(request: Request):
                     "nome_paciente": nome,
                     "data": data,
                     "tipo_uso": "USO INTRAMUSCULAR",
-                    "medicamentos": [{"nome": m["nome"], "posologia": m["posologia"], "quantidade": m["quantidade"]} for m in meds_im]
+                    "medicamentos": [{"nome": m["nome"], "posologia": m["posologia"], "quantidade": m["quantidade"]} for m in meds_im],
+                    "config": {"medico": cfg_medico, "especialidade": cfg_especialidade, "crm": cfg_crm}
                 }, docx_path)
                 pdf_path = convert_to_pdf(docx_path, temp_dir)
                 pdf_list.append(pdf_path)
@@ -264,7 +274,8 @@ async def gerar_documentos(request: Request):
                     "nome_paciente": nome,
                     "data": data,
                     "tipo_uso": "USO ORAL",
-                    "medicamentos": [{"nome": m["nome"], "posologia": m["posologia"], "quantidade": m["quantidade"]} for m in meds_oral]
+                    "medicamentos": [{"nome": m["nome"], "posologia": m["posologia"], "quantidade": m["quantidade"]} for m in meds_oral],
+                    "config": {"medico": cfg_medico, "especialidade": cfg_especialidade, "crm": cfg_crm}
                 }, docx_path)
                 pdf_path = convert_to_pdf(docx_path, temp_dir)
                 pdf_list.append(pdf_path)
@@ -304,7 +315,8 @@ async def gerar_documentos(request: Request):
                 "data": data,
                 "dias": atestado.get("dias", 1),
                 "cid": cid1,
-                "diagnostico": diag1
+                "diagnostico": diag1,
+                "config": {"medico": cfg_medico, "especialidade": cfg_especialidade, "crm": cfg_crm}
             }, docx_path)
             pdf_path = convert_to_pdf(docx_path, temp_dir)
             pdf_list.append(pdf_path)
@@ -317,7 +329,8 @@ async def gerar_documentos(request: Request):
             run_node_generator("laudo.js", {
                 "nome_paciente": nome,
                 "data": data,
-                "texto_laudo": laudo["texto"]
+                "texto_laudo": laudo["texto"],
+                "config": {"medico": cfg_medico, "especialidade": cfg_especialidade, "crm": cfg_crm}
             }, docx_path)
             pdf_path = convert_to_pdf(docx_path, temp_dir)
             pdf_list.append(pdf_path)
