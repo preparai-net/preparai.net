@@ -662,7 +662,6 @@ QUESTÕES:
         # Extrair JSON da resposta
         json_match = re.search(r'\{[\s\S]*\}', response_text)
         if json_match:
-            import re
             audit_result = json.loads(json_match.group())
         else:
             audit_result = {"questions": [], "error": "Não foi possível parsear resposta da API"}
