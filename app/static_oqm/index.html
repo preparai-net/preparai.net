@@ -1,0 +1,1027 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plataforma OQM — Preparação de Banco</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; }
+
+        .header { background: linear-gradient(135deg, #1e3a5f 0%, #0d2137 100%); padding: 20px 32px; border-bottom: 2px solid #f59e0b; display: flex; align-items: center; gap: 16px; }
+        .header h1 { font-size: 22px; color: #f59e0b; font-weight: 700; }
+        .header .badge { background: #f59e0b; color: #0f172a; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 4px; }
+        .header .subtitle { color: #94a3b8; font-size: 13px; margin-left: auto; }
+
+        .container { max-width: 1100px; margin: 0 auto; padding: 24px; }
+
+        /* Fases */
+        .phase { background: #1e293b; border-radius: 12px; padding: 24px; margin-bottom: 20px; border: 1px solid #334155; }
+        .phase.active { border-color: #f59e0b; }
+        .phase.done { border-color: #22c55e; opacity: 0.85; }
+        .phase.locked { opacity: 0.5; pointer-events: none; }
+        .phase-header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+        .phase-num { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; background: #334155; color: #94a3b8; flex-shrink: 0; }
+        .phase.active .phase-num { background: #f59e0b; color: #0f172a; }
+        .phase.done .phase-num { background: #22c55e; color: #fff; }
+        .phase-title { font-size: 16px; font-weight: 600; }
+
+        /* Upload */
+        .upload-area { border: 2px dashed #475569; border-radius: 8px; padding: 40px; text-align: center; cursor: pointer; transition: all 0.2s; }
+        .upload-area:hover { border-color: #f59e0b; background: rgba(245,158,11,0.05); }
+        .upload-area.dragover { border-color: #f59e0b; background: rgba(245,158,11,0.1); }
+        .upload-area input { display: none; }
+        .upload-icon { font-size: 40px; margin-bottom: 8px; }
+        .upload-text { color: #94a3b8; }
+        .upload-text strong { color: #f59e0b; }
+
+        /* Tabelas */
+        table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        th { background: #334155; color: #f59e0b; text-align: left; padding: 8px 12px; font-weight: 600; }
+        td { padding: 8px 12px; border-bottom: 1px solid #1e293b; }
+        tr:hover td { background: rgba(245,158,11,0.05); }
+        .badge-ok { background: #22c55e; color: #fff; padding: 2px 6px; border-radius: 3px; font-size: 11px; }
+        .badge-warn { background: #f59e0b; color: #0f172a; padding: 2px 6px; border-radius: 3px; font-size: 11px; }
+        .badge-err { background: #ef4444; color: #fff; padding: 2px 6px; border-radius: 3px; font-size: 11px; }
+
+        /* Summary cards */
+        .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 16px; }
+        .summary-card { background: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 12px; text-align: center; }
+        .summary-card .number { font-size: 28px; font-weight: 700; color: #f59e0b; }
+        .summary-card .label { font-size: 11px; color: #94a3b8; margin-top: 4px; }
+        .summary-card.ok .number { color: #22c55e; }
+        .summary-card.warn .number { color: #f59e0b; }
+        .summary-card.err .number { color: #ef4444; }
+
+        /* Config */
+        .config-row { display: flex; gap: 16px; align-items: center; margin-bottom: 12px; flex-wrap: wrap; }
+        .config-row label { font-size: 13px; color: #94a3b8; min-width: 120px; }
+        input[type="number"], input[type="text"], input[type="password"] {
+            background: #0f172a; border: 1px solid #475569; border-radius: 6px; padding: 8px 12px;
+            color: #e2e8f0; font-size: 14px; width: 200px;
+        }
+        input:focus { outline: none; border-color: #f59e0b; }
+        select { background: #0f172a; border: 1px solid #475569; border-radius: 6px; padding: 6px 8px; color: #e2e8f0; font-size: 12px; }
+
+        /* Checkboxes estilizados */
+        .checkbox-row { display: flex; gap: 24px; align-items: center; margin: 16px 0; flex-wrap: wrap; }
+        .checkbox-label { display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px; color: #e2e8f0; padding: 8px 16px; border: 1px solid #475569; border-radius: 8px; transition: all 0.2s; }
+        .checkbox-label:hover { border-color: #f59e0b; background: rgba(245,158,11,0.05); }
+        .checkbox-label input[type="checkbox"] { width: 16px; height: 16px; accent-color: #f59e0b; cursor: pointer; }
+        .checkbox-label.checked { border-color: #f59e0b; background: rgba(245,158,11,0.1); }
+
+        /* Botões */
+        .btn { padding: 10px 24px; border: none; border-radius: 8px; font-weight: 600; font-size: 14px; cursor: pointer; transition: all 0.2s; }
+        .btn-primary { background: #f59e0b; color: #0f172a; }
+        .btn-primary:hover { background: #d97706; }
+        .btn-primary:disabled { background: #475569; color: #94a3b8; cursor: not-allowed; }
+        .btn-secondary { background: #334155; color: #e2e8f0; }
+        .btn-secondary:hover { background: #475569; }
+        .btn-success { background: #22c55e; color: #fff; }
+        .btn-success:hover { background: #16a34a; }
+
+        /* Progress */
+        .progress-bar { width: 100%; height: 6px; background: #334155; border-radius: 3px; overflow: hidden; margin: 12px 0; }
+        .progress-fill { height: 100%; background: #f59e0b; border-radius: 3px; transition: width 0.3s; }
+
+        /* Spinner */
+        .spinner { display: inline-block; width: 18px; height: 18px; border: 2px solid #475569; border-top: 2px solid #f59e0b; border-radius: 50%; animation: spin 0.8s linear infinite; margin-right: 8px; vertical-align: middle; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Dificuldade selects na tabela */
+        .diff-select { background: #1e293b; border: 1px solid #475569; color: #e2e8f0; padding: 4px 6px; border-radius: 4px; font-size: 12px; width: 130px; }
+        .cat-input { background: #1e293b; border: 1px solid #475569; color: #e2e8f0; padding: 4px 6px; border-radius: 4px; font-size: 12px; width: 160px; }
+        .sub-input { background: #1e293b; border: 1px solid #475569; color: #e2e8f0; padding: 4px 6px; border-radius: 4px; font-size: 12px; width: 180px; }
+        .cat-select, .sub-select { background: #1e293b; border: 1px solid #475569; color: #e2e8f0; padding: 4px 6px; border-radius: 4px; font-size: 12px; }
+        .cat-select { width: 160px; }
+        .sub-select { width: 200px; }
+        .tax-local { border-color: #3b82f6 !important; }
+        .tax-api { border-color: #f59e0b !important; }
+        .tax-badge { font-size: 9px; padding: 1px 4px; border-radius: 3px; margin-left: 4px; vertical-align: middle; }
+        .tax-badge.local { background: #1e3a5f; color: #60a5fa; }
+        .tax-badge.api { background: #451a03; color: #f59e0b; }
+
+        /* Validation */
+        .check-ok::before { content: '✅'; margin-right: 4px; }
+        .check-fail::before { content: '❌'; margin-right: 4px; }
+
+        .actions { display: flex; gap: 12px; margin-top: 16px; }
+        .hidden { display: none !important; }
+
+        /* Toast */
+        .toast { position: fixed; bottom: 24px; right: 24px; background: #22c55e; color: #fff; padding: 12px 20px; border-radius: 8px; font-weight: 600; z-index: 999; animation: fadeIn 0.3s; }
+        .toast.error { background: #ef4444; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Tabs */
+        .tab-bar { display: flex; background: #0d1b2a; border-bottom: 2px solid #334155; }
+        .tab-btn { padding: 12px 28px; font-size: 14px; font-weight: 600; color: #94a3b8; background: none; border: none; cursor: pointer; border-bottom: 3px solid transparent; transition: all 0.2s; }
+        .tab-btn:hover { color: #e2e8f0; background: rgba(245,158,11,0.05); }
+        .tab-btn.active { color: #f59e0b; border-bottom-color: #f59e0b; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        /* File list */
+        .file-list { margin-top: 12px; }
+        .file-item { display: flex; align-items: center; gap: 8px; padding: 6px 12px; background: #0f172a; border: 1px solid #334155; border-radius: 6px; margin-bottom: 4px; font-size: 12px; }
+        .file-item .file-name { flex: 1; color: #e2e8f0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .file-item .file-size { color: #94a3b8; font-size: 11px; }
+        .file-item .file-remove { color: #ef4444; cursor: pointer; font-weight: 700; padding: 2px 6px; border-radius: 4px; }
+        .file-item .file-remove:hover { background: rgba(239,68,68,0.15); }
+        .file-count { color: #f59e0b; font-weight: 600; font-size: 13px; margin-top: 8px; }
+
+        /* Checkbox sections */
+        .checkbox-section { margin: 16px 0; }
+        .checkbox-section-title { font-size: 12px; color: #f59e0b; font-weight: 600; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .checkbox-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px; }
+        .toggle-all-row { display: flex; gap: 12px; margin-bottom: 12px; }
+        .toggle-all-btn { padding: 4px 12px; font-size: 11px; border: 1px solid #475569; border-radius: 4px; background: #1e293b; color: #94a3b8; cursor: pointer; }
+        .toggle-all-btn:hover { border-color: #f59e0b; color: #f59e0b; }
+
+        /* Download list */
+        .download-list { margin-top: 16px; }
+        .download-item { display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: #0f172a; border: 1px solid #334155; border-radius: 8px; margin-bottom: 6px; transition: border-color 0.2s; }
+        .download-item:hover { border-color: #f59e0b; }
+        .download-item .dl-icon { font-size: 24px; flex-shrink: 0; }
+        .download-item .dl-info { flex: 1; min-width: 0; }
+        .download-item .dl-name { font-size: 13px; font-weight: 600; color: #e2e8f0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .download-item .dl-original { font-size: 11px; color: #64748b; }
+        .download-item .dl-status { font-size: 11px; margin-left: 8px; }
+        .download-item .btn-download { padding: 6px 16px; font-size: 12px; font-weight: 600; background: #22c55e; color: #fff; border: none; border-radius: 6px; cursor: pointer; flex-shrink: 0; }
+        .download-item .btn-download:hover { background: #16a34a; }
+        .download-item.error { border-color: #ef4444; opacity: 0.7; }
+        .download-item.error .dl-name { color: #ef4444; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Plataforma OQM</h1>
+        <span class="badge">PREPARAI</span>
+        <span class="subtitle">Preparação de Banco de Questões para Upload</span>
+    </div>
+
+    <div class="tab-bar">
+        <button class="tab-btn active" onclick="switchTab('preparai')">Processar Questões</button>
+        <button class="tab-btn" onclick="switchTab('videos')">Inserir Vídeos</button>
+    </div>
+
+    <!-- =============== ABA 1: PROCESSAR QUESTÕES =============== -->
+    <div class="tab-content active" id="tab-preparai">
+    <div class="container">
+
+        <!-- FASE 0+1: Upload e Análise -->
+        <div class="phase active" id="phase-upload">
+            <div class="phase-header">
+                <div class="phase-num">1</div>
+                <div class="phase-title">Upload e Análise</div>
+            </div>
+            <div class="upload-area" id="uploadArea">
+                <input type="file" id="fileInput" accept=".docx" multiple>
+                <div class="upload-icon">📄</div>
+                <div class="upload-text">Arraste <strong>um ou mais .docx</strong> aqui ou clique para selecionar</div>
+                <div style="font-size:11px;color:#64748b;margin-top:4px">Pode enviar vários arquivos (1 questão por arquivo)</div>
+            </div>
+            <div id="fileList" class="file-list hidden"></div>
+            <div id="uploadProgress" class="hidden">
+                <div class="progress-bar"><div class="progress-fill" id="uploadFill" style="width:0%"></div></div>
+                <p style="font-size:13px;color:#94a3b8"><span class="spinner"></span>Analisando documento...</p>
+            </div>
+        </div>
+
+        <!-- FASE 1: Relatório de Auditoria -->
+        <div class="phase locked" id="phase-audit">
+            <div class="phase-header">
+                <div class="phase-num">2</div>
+                <div class="phase-title">Relatório de Auditoria</div>
+            </div>
+            <div id="auditContent"></div>
+        </div>
+
+        <!-- FASE 2: Configuração e Confirmação -->
+        <div class="phase locked" id="phase-config">
+            <div class="phase-header">
+                <div class="phase-num">3</div>
+                <div class="phase-title">Configuração</div>
+            </div>
+            <div class="config-row">
+                <label>ID OQM inicial:</label>
+                <input type="number" id="startOqm" value="1" min="1">
+                <span style="font-size:12px;color:#94a3b8">→ OQM00001, OQM00002, ...</span>
+            </div>
+            <div class="config-row">
+                <label>API Key Claude:</label>
+                <input type="password" id="apiKey" placeholder="sk-ant-..." style="width:350px">
+                <button class="btn btn-secondary" onclick="runSemanticAudit()" id="btnAudit">Auditar com IA</button>
+            </div>
+            <div id="semanticResult" class="hidden" style="margin-top:16px"></div>
+
+            <h3 style="margin:20px 0 12px;font-size:14px;color:#f59e0b">Questões — Dificuldade e Categorias</h3>
+            <div style="overflow-x:auto">
+                <table id="questionsTable">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Questão</th>
+                            <th>Categoria</th>
+                            <th>Subtema</th>
+                            <th>Dificuldade</th>
+                            <th>Gabarito</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="questionsBody"></tbody>
+                </table>
+            </div>
+
+            <h3 style="margin:20px 0 8px;font-size:14px;color:#f59e0b">Ajustes a Aplicar</h3>
+            <div class="toggle-all-row">
+                <button class="toggle-all-btn" onclick="toggleAllChecks(true)">Marcar Todos</button>
+                <button class="toggle-all-btn" onclick="toggleAllChecks(false)">Desmarcar Todos</button>
+            </div>
+
+            <div class="checkbox-section">
+                <div class="checkbox-section-title">Classificação</div>
+                <div class="checkbox-grid">
+                    <label class="checkbox-label checked" id="lblCategories">
+                        <input type="checkbox" id="chkCategories" checked onchange="toggleCheckLabel(this, 'lblCategories')">
+                        Alterar Categorias
+                    </label>
+                    <label class="checkbox-label checked" id="lblSubtemas">
+                        <input type="checkbox" id="chkSubtemas" checked onchange="toggleCheckLabel(this, 'lblSubtemas')">
+                        Alterar Subtemas
+                    </label>
+                    <label class="checkbox-label checked" id="lblDifficulties">
+                        <input type="checkbox" id="chkDifficulties" checked onchange="toggleCheckLabel(this, 'lblDifficulties')">
+                        Alterar Dificuldades
+                    </label>
+                </div>
+            </div>
+
+            <div class="checkbox-section">
+                <div class="checkbox-section-title">Formatação</div>
+                <div class="checkbox-grid">
+                    <label class="checkbox-label checked" id="lblAccents">
+                        <input type="checkbox" id="chkAccents" checked onchange="toggleCheckLabel(this, 'lblAccents')">
+                        Corrigir Acentos
+                    </label>
+                    <label class="checkbox-label checked" id="lblHighlight">
+                        <input type="checkbox" id="chkHighlight" checked onchange="toggleCheckLabel(this, 'lblHighlight')">
+                        Highlight no Gabarito
+                    </label>
+                    <label class="checkbox-label checked" id="lblBoldResol">
+                        <input type="checkbox" id="chkBoldResol" checked onchange="toggleCheckLabel(this, 'lblBoldResol')">
+                        Negrito na Resolução
+                    </label>
+                    <label class="checkbox-label checked" id="lblLimitRefs">
+                        <input type="checkbox" id="chkLimitRefs" checked onchange="toggleCheckLabel(this, 'lblLimitRefs')">
+                        Limitar a 1 Referência
+                    </label>
+                </div>
+            </div>
+
+            <div class="checkbox-section">
+                <div class="checkbox-section-title">Estrutura</div>
+                <div class="checkbox-grid">
+                    <label class="checkbox-label checked" id="lblInsertTags">
+                        <input type="checkbox" id="chkInsertTags" checked onchange="toggleCheckLabel(this, 'lblInsertTags')">
+                        Inserir Tags Estruturais
+                    </label>
+                    <label class="checkbox-label checked" id="lblVideo">
+                        <input type="checkbox" id="chkVideo" checked onchange="toggleCheckLabel(this, 'lblVideo')">
+                        Inserir Vídeo/URL
+                    </label>
+                    <label class="checkbox-label checked" id="lblRemoveSep">
+                        <input type="checkbox" id="chkRemoveSep" checked onchange="toggleCheckLabel(this, 'lblRemoveSep')">
+                        Remover Separadores
+                    </label>
+                    <label class="checkbox-label checked" id="lblPageBreaks">
+                        <input type="checkbox" id="chkPageBreaks" checked onchange="toggleCheckLabel(this, 'lblPageBreaks')">
+                        Page Breaks entre Questões
+                    </label>
+                </div>
+            </div>
+
+            <div class="actions">
+                <button class="btn btn-primary" onclick="processDocument()" id="btnProcess">Processar Documento</button>
+            </div>
+        </div>
+
+        <!-- FASE 5: Validação e Downloads -->
+        <div class="phase locked" id="phase-validation">
+            <div class="phase-header">
+                <div class="phase-num">4</div>
+                <div class="phase-title">Validação e Downloads</div>
+            </div>
+            <div id="validationContent"></div>
+            <div id="downloadList" class="hidden"></div>
+            <div class="actions" id="downloadActions" style="margin-top:16px">
+                <button class="btn btn-success" onclick="downloadAll()" id="btnDownloadAll" class="hidden">📦 Baixar Todos (ZIP)</button>
+            </div>
+        </div>
+
+    </div>
+    </div><!-- fim tab-preparai -->
+
+    <!-- =============== ABA 2: INSERIR VÍDEOS =============== -->
+    <div class="tab-content" id="tab-videos">
+    <div class="container">
+
+        <div class="phase active">
+            <div class="phase-header">
+                <div class="phase-num">1</div>
+                <div class="phase-title">Upload — Arquivo de Questões</div>
+            </div>
+            <p style="font-size:13px;color:#94a3b8;margin-bottom:12px">Envie o .docx com questões já processadas (com OQM IDs). Os vídeos serão inseridos neste arquivo.</p>
+            <div class="upload-area" id="videoUploadQuestions">
+                <input type="file" id="videoFileQuestions" accept=".docx" multiple>
+                <div class="upload-icon">📄</div>
+                <div class="upload-text">Arraste <strong>um ou mais .docx de questões</strong> aqui</div>
+                <div style="font-size:11px;color:#64748b;margin-top:4px">Pode enviar vários arquivos de uma vez</div>
+            </div>
+            <div id="videoQuestionsStatus" class="hidden" style="margin-top:12px">
+                <p style="color:#22c55e;font-size:13px">✅ <span id="videoQuestionsName"></span> — <span id="videoQuestionsCount"></span> questões detectadas</p>
+            </div>
+        </div>
+
+        <div class="phase active">
+            <div class="phase-header">
+                <div class="phase-num">2</div>
+                <div class="phase-title">Upload — Arquivo de Vídeos</div>
+            </div>
+            <p style="font-size:13px;color:#94a3b8;margin-bottom:12px">Envie o .docx com os IDs das questões e suas URLs de vídeo (formato: [NOME DA QUESTÃO] / OQMxxxxx / [VÍDEO] / URL).</p>
+            <div class="upload-area" id="videoUploadVideos">
+                <input type="file" id="videoFileVideos" accept=".docx">
+                <div class="upload-icon">🎬</div>
+                <div class="upload-text">Arraste o <strong>.docx de vídeos</strong> aqui</div>
+            </div>
+            <div id="videoVideosStatus" class="hidden" style="margin-top:12px">
+                <p style="color:#22c55e;font-size:13px">✅ <span id="videoVideosName"></span> — <span id="videoVideosCount"></span> vídeos detectados</p>
+            </div>
+        </div>
+
+        <div class="phase active">
+            <div class="phase-header">
+                <div class="phase-num">3</div>
+                <div class="phase-title">Resultado</div>
+            </div>
+            <div id="videoMergeResult" class="hidden"></div>
+            <div class="actions">
+                <button class="btn btn-primary" onclick="mergeVideos()" id="btnMergeVideos" disabled>Inserir Vídeos nas Questões</button>
+            </div>
+            <div class="actions hidden" id="videoDownloadActions" style="margin-top:12px">
+                <button class="btn btn-success" onclick="downloadVideoResult()" id="btnDownloadVideo">Baixar Arquivo com Vídeos</button>
+            </div>
+        </div>
+
+    </div>
+    </div><!-- fim tab-videos -->
+
+    <script>
+    // =====================================================
+    // STATE
+    // =====================================================
+    let sessionData = null;
+    let questionsData = [];
+    let taxonomyData = null; // {categories: [...], subtemas: {cat: [sub1, sub2, ...]}}
+
+    // Carregar taxonomia ao iniciar
+    (async function loadTaxonomy() {
+        try {
+            const res = await fetch('/api/oqm/taxonomy');
+            if (res.ok) taxonomyData = await res.json();
+        } catch(e) { console.warn('Taxonomia não carregada:', e); }
+    })();
+
+    // =====================================================
+    // UPLOAD (múltiplos arquivos)
+    // =====================================================
+    const uploadArea = document.getElementById('uploadArea');
+    const fileInput = document.getElementById('fileInput');
+    let pendingFiles = [];
+
+    uploadArea.addEventListener('click', () => fileInput.click());
+    uploadArea.addEventListener('dragover', e => { e.preventDefault(); uploadArea.classList.add('dragover'); });
+    uploadArea.addEventListener('dragleave', () => uploadArea.classList.remove('dragover'));
+    uploadArea.addEventListener('drop', e => {
+        e.preventDefault();
+        uploadArea.classList.remove('dragover');
+        if (e.dataTransfer.files.length) addFiles(e.dataTransfer.files);
+    });
+    fileInput.addEventListener('change', () => { if (fileInput.files.length) addFiles(fileInput.files); });
+
+    function addFiles(fileList) {
+        for (const f of fileList) {
+            if (!f.name.endsWith('.docx')) continue;
+            // Evitar duplicatas
+            if (!pendingFiles.find(p => p.name === f.name && p.size === f.size)) {
+                pendingFiles.push(f);
+            }
+        }
+        renderFileList();
+        // Auto-upload se só 1 arquivo
+        if (pendingFiles.length === 1) {
+            uploadFiles();
+        }
+    }
+
+    function renderFileList() {
+        const el = document.getElementById('fileList');
+        if (pendingFiles.length === 0) { el.classList.add('hidden'); return; }
+        el.classList.remove('hidden');
+        let html = '';
+        for (let i = 0; i < pendingFiles.length; i++) {
+            const f = pendingFiles[i];
+            const sizeKb = (f.size / 1024).toFixed(0);
+            html += `<div class="file-item">
+                <span class="file-name">📄 ${f.name}</span>
+                <span class="file-size">${sizeKb} KB</span>
+                <span class="file-remove" onclick="removeFile(${i})">✕</span>
+            </div>`;
+        }
+        html += `<div class="file-count">${pendingFiles.length} arquivo(s) selecionado(s)</div>`;
+        if (pendingFiles.length > 1) {
+            html += `<button class="btn btn-primary" style="margin-top:8px" onclick="uploadFiles()">Enviar ${pendingFiles.length} Arquivos</button>`;
+        }
+        el.innerHTML = html;
+    }
+
+    function removeFile(idx) {
+        pendingFiles.splice(idx, 1);
+        renderFileList();
+    }
+
+    async function uploadFiles() {
+        if (pendingFiles.length === 0) return;
+
+        uploadArea.classList.add('hidden');
+        document.getElementById('fileList').classList.add('hidden');
+        document.getElementById('uploadProgress').classList.remove('hidden');
+        document.getElementById('uploadFill').style.width = '30%';
+
+        const form = new FormData();
+        for (const f of pendingFiles) {
+            form.append('files', f);
+        }
+
+        try {
+            const res = await fetch('/api/oqm/upload', { method: 'POST', body: form });
+            document.getElementById('uploadFill').style.width = '100%';
+
+            if (!res.ok) { const e = await res.json(); throw new Error(e.erro || 'Erro no upload'); }
+
+            sessionData = await res.json();
+            questionsData = sessionData.questions || [];
+
+            // Mostrar info do merge
+            if (sessionData.files_count > 1) {
+                showToast(`${sessionData.files_count} arquivos combinados → ${sessionData.analysis.total_questions} questões`);
+            }
+
+            // Atualizar UI
+            renderAudit(sessionData);
+            renderQuestionsTable(questionsData);
+
+            setPhase('phase-upload', 'done');
+            setPhase('phase-audit', 'active');
+            setPhase('phase-config', 'active');
+
+            pendingFiles = [];
+
+        } catch (e) {
+            showToast(e.message, true);
+            uploadArea.classList.remove('hidden');
+            document.getElementById('fileList').classList.remove('hidden');
+            document.getElementById('uploadProgress').classList.add('hidden');
+        }
+    }
+
+    // =====================================================
+    // AUDITORIA
+    // =====================================================
+    function renderAudit(data) {
+        const a = data.analysis;
+        const s = data.audit.summary;
+        const el = document.getElementById('auditContent');
+
+        let html = `
+        <div class="summary-grid">
+            <div class="summary-card ok"><div class="number">${a.total_questions}</div><div class="label">Questões</div></div>
+            <div class="summary-card ${a.duplicates.length ? 'warn' : 'ok'}"><div class="number">${a.duplicates.length}</div><div class="label">Duplicatas</div></div>
+            <div class="summary-card ${s.sem_highlight ? 'warn' : 'ok'}"><div class="number">${s.sem_highlight}</div><div class="label">Sem Highlight</div></div>
+            <div class="summary-card ${s.sem_grau ? 'warn' : 'ok'}"><div class="number">${s.sem_grau}</div><div class="label">Sem Grau</div></div>
+            <div class="summary-card ${s.acentos ? 'warn' : 'ok'}"><div class="number">${s.acentos}</div><div class="label">Acentos</div></div>
+            <div class="summary-card ${s.refs_multiplas ? 'warn' : 'ok'}"><div class="number">${s.refs_multiplas}</div><div class="label">Refs Múltiplas</div></div>
+            <div class="summary-card"><div class="number">${a.media_files}</div><div class="label">Imagens</div></div>
+        </div>`;
+
+        // Tabela de problemas
+        const issues = data.audit.issues.filter(i => i.issues.length > 0);
+        if (issues.length) {
+            html += `<table><thead><tr><th>Questão</th><th>Problemas Detectados</th></tr></thead><tbody>`;
+            for (const i of issues) {
+                html += `<tr><td><strong>Q${i.number}</strong></td><td>${i.issues.map(x => `<span class="badge-warn">${x}</span> `).join('')}</td></tr>`;
+            }
+            html += `</tbody></table>`;
+        } else {
+            html += `<p style="color:#22c55e;font-weight:600">✅ Nenhum problema estrutural detectado!</p>`;
+        }
+
+        if (a.duplicates.length) {
+            html += `<p style="margin-top:12px;color:#f59e0b">⚠️ Duplicatas: ${a.duplicates.map(d => `Q${d.q1} = Q${d.q2}`).join(', ')}</p>`;
+        }
+
+        el.innerHTML = html;
+    }
+
+    // =====================================================
+    // TABELA DE QUESTÕES
+    // =====================================================
+    function renderQuestionsTable(questions) {
+        const tbody = document.getElementById('questionsBody');
+        tbody.innerHTML = '';
+
+        // Build category options
+        const cats = taxonomyData ? taxonomyData.categories : [];
+        const catOptionsHtml = '<option value="">—</option>' + cats.map(c => `<option value="${c}">${c}</option>`).join('');
+
+        for (const q of questions) {
+            const issues = [];
+            if (!q.has_highlight) issues.push('highlight');
+            if (!q.has_referencias) issues.push('ref');
+            if (q.accent_issues.length) issues.push('acento');
+
+            const statusHtml = issues.length
+                ? issues.map(i => `<span class="badge-warn">${i}</span>`).join(' ')
+                : '<span class="badge-ok">OK</span>';
+
+            const diffOptions = ['Muito fácil','Fácil','Mediano','Difícil','Muito Difícil']
+                .map(d => `<option value="${d}" ${d==='Mediano'?'selected':''}>${d}</option>`).join('');
+
+            const taxClass = q.taxonomy_method === 'local' ? 'tax-local' : q.taxonomy_method === 'api' ? 'tax-api' : '';
+            const taxBadge = q.taxonomy_method === 'local' ? '<span class="tax-badge local">auto</span>' : '';
+
+            // Build subtema options for this question's category
+            let subOptionsHtml = '<option value="">—</option>';
+            if (q.categoria && taxonomyData && taxonomyData.subtemas[q.categoria]) {
+                subOptionsHtml += taxonomyData.subtemas[q.categoria].map(s => `<option value="${s}">${s}</option>`).join('');
+            }
+
+            tbody.innerHTML += `
+            <tr>
+                <td>${q.number}</td>
+                <td title="${q.enunciado_preview}">${q.header}</td>
+                <td>
+                    <select class="cat-select ${taxClass}" data-q="${q.number}" onchange="onCatChange(this)">
+                        ${catOptionsHtml}
+                    </select>${taxBadge}
+                </td>
+                <td>
+                    <select class="sub-select ${taxClass}" data-q="${q.number}">
+                        ${subOptionsHtml}
+                    </select>
+                </td>
+                <td><select class="diff-select" data-q="${q.number}">${diffOptions}</select></td>
+                <td>${q.gabarito || '—'}</td>
+                <td>${statusHtml}</td>
+            </tr>`;
+        }
+
+        // Set selected values after rendering
+        for (const q of questions) {
+            if (q.categoria) {
+                const sel = document.querySelector(`.cat-select[data-q="${q.number}"]`);
+                if (sel) sel.value = q.categoria;
+            }
+            if (q.subtema) {
+                const sel = document.querySelector(`.sub-select[data-q="${q.number}"]`);
+                if (sel) sel.value = q.subtema;
+            }
+        }
+    }
+
+    function onCatChange(selectEl) {
+        const qNum = selectEl.dataset.q;
+        const cat = selectEl.value;
+        const subSelect = document.querySelector(`.sub-select[data-q="${qNum}"]`);
+        if (!subSelect) return;
+
+        let html = '<option value="">—</option>';
+        if (cat && taxonomyData && taxonomyData.subtemas[cat]) {
+            html += taxonomyData.subtemas[cat].map(s => `<option value="${s}">${s}</option>`).join('');
+        }
+        subSelect.innerHTML = html;
+    }
+
+    // =====================================================
+    // AUDITORIA SEMÂNTICA (API Claude)
+    // =====================================================
+    async function runSemanticAudit() {
+        const apiKey = document.getElementById('apiKey').value.trim();
+        if (!apiKey) { showToast('Insira a API Key do Claude', true); return; }
+
+        const btn = document.getElementById('btnAudit');
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner"></span>Auditando...';
+
+        try {
+            const res = await fetch('/api/oqm/semantic-audit', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ api_key: apiKey })
+            });
+
+            if (!res.ok) { const e = await res.json(); throw new Error(e.erro); }
+
+            const data = await res.json();
+
+            if (data.audit && data.audit.questions) {
+                // Aplicar sugestões na tabela
+                for (const sq of data.audit.questions) {
+                    // Dificuldade
+                    const diffSelect = document.querySelector(`.diff-select[data-q="${sq.number}"]`);
+                    if (diffSelect && sq.difficulty) diffSelect.value = sq.difficulty;
+
+                    // Categoria e Subtema (campos separados)
+                    if (!sq.category_ok) {
+                        if (sq.suggested_category) {
+                            const catSel = document.querySelector(`.cat-select[data-q="${sq.number}"]`);
+                            if (catSel) {
+                                catSel.value = sq.suggested_category;
+                                catSel.classList.add('tax-api');
+                                catSel.classList.remove('tax-local');
+                                catSel.title = sq.category_reason || 'Sugestão da IA';
+                                // Update subtema options
+                                onCatChange(catSel);
+                            }
+                        }
+                        if (sq.suggested_subtema) {
+                            const subSel = document.querySelector(`.sub-select[data-q="${sq.number}"]`);
+                            if (subSel) {
+                                subSel.value = sq.suggested_subtema;
+                                subSel.classList.add('tax-api');
+                                subSel.classList.remove('tax-local');
+                                subSel.title = sq.category_reason || 'Sugestão da IA';
+                            }
+                        }
+                    }
+                }
+
+                const resultEl = document.getElementById('semanticResult');
+                resultEl.classList.remove('hidden');
+                resultEl.innerHTML = `<p style="color:#22c55e">✅ Auditoria concluída. ${data.audit.questions.length} questões analisadas. Revise as sugestões na tabela abaixo.</p>`;
+            }
+
+        } catch (e) {
+            showToast(e.message, true);
+        } finally {
+            btn.disabled = false;
+            btn.textContent = 'Auditar com IA';
+        }
+    }
+
+    // =====================================================
+    // PROCESSAR
+    // =====================================================
+    async function processDocument() {
+        const btn = document.getElementById('btnProcess');
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner"></span>Processando...';
+
+        // Checar opções de processamento
+        const flags = {
+            apply_categories: document.getElementById('chkCategories').checked,
+            apply_subtemas: document.getElementById('chkSubtemas').checked,
+            apply_difficulties: document.getElementById('chkDifficulties').checked,
+            apply_video: document.getElementById('chkVideo').checked,
+            apply_accents: document.getElementById('chkAccents').checked,
+            apply_highlight: document.getElementById('chkHighlight').checked,
+            apply_bold_resolucao: document.getElementById('chkBoldResol').checked,
+            apply_limit_refs: document.getElementById('chkLimitRefs').checked,
+            apply_insert_tags: document.getElementById('chkInsertTags').checked,
+            apply_remove_separators: document.getElementById('chkRemoveSep').checked,
+            apply_page_breaks: document.getElementById('chkPageBreaks').checked,
+        };
+
+        // Coletar dificuldades, categorias e subtemas da tabela
+        const difficulties = {};
+        const categories = {};
+        const subtemas = {};
+
+        document.querySelectorAll('.diff-select').forEach(sel => {
+            difficulties[sel.dataset.q] = sel.value;
+        });
+        document.querySelectorAll('.cat-select').forEach(sel => {
+            if (sel.value.trim()) categories[sel.dataset.q] = sel.value.trim();
+        });
+        document.querySelectorAll('.sub-select').forEach(sel => {
+            if (sel.value.trim()) subtemas[sel.dataset.q] = sel.value.trim();
+        });
+
+        try {
+            const res = await fetch('/api/oqm/process', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    start_oqm: parseInt(document.getElementById('startOqm').value) || 1,
+                    difficulties,
+                    categories,
+                    subtemas,
+                    ...flags,
+                })
+            });
+
+            if (!res.ok) { const e = await res.json(); throw new Error(e.erro); }
+
+            const data = await res.json();
+
+            // Renderizar validações por arquivo
+            renderValidations(data.validations);
+
+            // Renderizar lista de downloads
+            renderDownloadList(data.files);
+
+            setPhase('phase-config', 'done');
+            setPhase('phase-validation', 'active');
+
+        } catch (e) {
+            showToast(e.message, true);
+        } finally {
+            btn.disabled = false;
+            btn.textContent = 'Processar Documento';
+        }
+    }
+
+    // =====================================================
+    // VALIDAÇÃO (por arquivo)
+    // =====================================================
+    function renderValidations(validations) {
+        const el = document.getElementById('validationContent');
+        let html = '';
+
+        // Summary
+        const totalFiles = validations.length;
+        const successFiles = validations.filter(v => !v.error).length;
+        const errorFiles = validations.filter(v => v.error).length;
+
+        html += `<div class="summary-grid">
+            <div class="summary-card ok"><div class="number">${totalFiles}</div><div class="label">Arquivos</div></div>
+            <div class="summary-card ok"><div class="number">${successFiles}</div><div class="label">Processados</div></div>
+            ${errorFiles ? `<div class="summary-card err"><div class="number">${errorFiles}</div><div class="label">Erros</div></div>` : ''}
+        </div>`;
+
+        // Detalhes de cada arquivo
+        for (const val of validations) {
+            if (val.error) {
+                html += `<div style="margin:8px 0;padding:12px;background:#451a03;border-radius:8px;border:1px solid #ef4444">
+                    <p style="color:#ef4444;font-weight:600">❌ ${val.original_name}: ${val.error}</p>
+                </div>`;
+                continue;
+            }
+
+            const v = val.validation;
+            if (!v || !v.questions) continue;
+
+            html += `<div style="margin:12px 0;padding:12px;background:#1a2332;border-radius:8px;border:1px solid #334155">
+                <p style="font-weight:600;color:#f59e0b;margin-bottom:8px">📄 ${val.original_name} → ${val.file_name}</p>
+                <table><thead><tr>
+                    <th>OQM</th><th>Tags</th><th>Gabarito</th><th>Highlight</th><th>Resolução</th><th>1 Ref</th><th>Vídeo</th><th>Dificuldade</th>
+                </tr></thead><tbody>`;
+
+            for (const q of v.questions) {
+                const c = q.checks;
+                const check = (ok) => ok ? '<span class="badge-ok">✓</span>' : '<span class="badge-err">✗</span>';
+                html += `<tr>
+                    <td><strong>${q.oqm_id}</strong></td>
+                    <td>${check(c.all_tags)}</td>
+                    <td>${check(c.gabarito_valid)}</td>
+                    <td>${check(c.highlight_correct)}</td>
+                    <td>${check(c.resolucao_bold)}</td>
+                    <td>${check(c.ref_1_bullet)}</td>
+                    <td>${check(c.has_video)}</td>
+                    <td>${check(c.difficulty_valid)}</td>
+                </tr>`;
+            }
+            html += '</tbody></table>';
+
+            // Issues
+            const allIssues = v.questions.flatMap(q => (q.issues||[]).map(i => `${q.oqm_id}: ${i}`));
+            if (allIssues.length) {
+                html += `<div style="margin-top:8px;padding:8px;background:#451a03;border-radius:6px;border:1px solid #f59e0b">
+                    <p style="color:#f59e0b;font-weight:600;font-size:12px;margin-bottom:4px">⚠️ ${allIssues.length} avisos:</p>
+                    ${allIssues.map(i => `<p style="font-size:11px;color:#fbbf24">• ${i}</p>`).join('')}
+                </div>`;
+            }
+            html += '</div>';
+        }
+
+        el.innerHTML = html;
+    }
+
+    // =====================================================
+    // LISTA DE DOWNLOADS
+    // =====================================================
+    function renderDownloadList(files) {
+        const container = document.getElementById('downloadList');
+        container.classList.remove('hidden');
+
+        let html = '<div class="download-list">';
+        let hasSuccess = false;
+
+        for (const f of files) {
+            if (f.error) {
+                html += `<div class="download-item error">
+                    <div class="dl-icon">❌</div>
+                    <div class="dl-info">
+                        <div class="dl-name">${f.original_name}</div>
+                        <div class="dl-original" style="color:#ef4444">Erro: ${f.error}</div>
+                    </div>
+                </div>`;
+            } else {
+                hasSuccess = true;
+                html += `<div class="download-item">
+                    <div class="dl-icon">📄</div>
+                    <div class="dl-info">
+                        <div class="dl-name">${f.output_name}</div>
+                        <div class="dl-original">Original: ${f.original_name}</div>
+                    </div>
+                    <button class="btn-download" onclick="downloadSingle(${f.index})">Baixar</button>
+                </div>`;
+            }
+        }
+        html += '</div>';
+        container.innerHTML = html;
+
+        // Mostrar botão ZIP se mais de 1 arquivo com sucesso
+        const btnAll = document.getElementById('btnDownloadAll');
+        if (hasSuccess && files.filter(f => !f.error).length > 1) {
+            btnAll.classList.remove('hidden');
+            btnAll.style.display = '';
+        } else if (hasSuccess) {
+            // Só 1 arquivo — esconder ZIP
+            btnAll.classList.add('hidden');
+        }
+        document.getElementById('downloadActions').classList.remove('hidden');
+    }
+
+    // =====================================================
+    // DOWNLOAD
+    // =====================================================
+    function downloadSingle(index) {
+        window.location.href = `/api/oqm/download/${index}`;
+    }
+
+    function downloadAll() {
+        window.location.href = '/api/oqm/download-all';
+    }
+
+    // =====================================================
+    // HELPERS
+    // =====================================================
+    function setPhase(id, state) {
+        const el = document.getElementById(id);
+        el.classList.remove('active', 'done', 'locked');
+        el.classList.add(state);
+    }
+
+    function toggleCheckLabel(checkbox, labelId) {
+        const label = document.getElementById(labelId);
+        if (checkbox.checked) {
+            label.classList.add('checked');
+        } else {
+            label.classList.remove('checked');
+        }
+    }
+    // Todos os checkboxes e seus labels
+    const ALL_CHECKS = [
+        ['chkCategories', 'lblCategories'], ['chkSubtemas', 'lblSubtemas'],
+        ['chkDifficulties', 'lblDifficulties'], ['chkAccents', 'lblAccents'],
+        ['chkHighlight', 'lblHighlight'], ['chkBoldResol', 'lblBoldResol'],
+        ['chkLimitRefs', 'lblLimitRefs'], ['chkInsertTags', 'lblInsertTags'],
+        ['chkVideo', 'lblVideo'], ['chkRemoveSep', 'lblRemoveSep'],
+        ['chkPageBreaks', 'lblPageBreaks'],
+    ];
+
+    function toggleAllChecks(state) {
+        for (const [chkId, lblId] of ALL_CHECKS) {
+            const chk = document.getElementById(chkId);
+            if (chk) { chk.checked = state; toggleCheckLabel(chk, lblId); }
+        }
+    }
+
+    // Inicializar estado visual dos checkboxes
+    document.addEventListener('DOMContentLoaded', () => {
+        for (const [chkId, lblId] of ALL_CHECKS) {
+            const chk = document.getElementById(chkId);
+            if (chk) toggleCheckLabel(chk, lblId);
+        }
+    });
+
+    // =====================================================
+    // TABS
+    // =====================================================
+    function switchTab(tabName) {
+        document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById('tab-' + tabName).classList.add('active');
+        event.target.classList.add('active');
+    }
+
+    // =====================================================
+    // ABA VÍDEOS — UPLOAD E MERGE
+    // =====================================================
+    let videoQuestionsUploaded = false;
+    let videoVideosUploaded = false;
+
+    // Upload questões
+    const vUpQ = document.getElementById('videoUploadQuestions');
+    const vFileQ = document.getElementById('videoFileQuestions');
+    vUpQ.addEventListener('click', () => vFileQ.click());
+    vUpQ.addEventListener('dragover', e => { e.preventDefault(); vUpQ.classList.add('dragover'); });
+    vUpQ.addEventListener('dragleave', () => vUpQ.classList.remove('dragover'));
+    vUpQ.addEventListener('drop', e => { e.preventDefault(); vUpQ.classList.remove('dragover'); if (e.dataTransfer.files.length) handleVideoQuestions(e.dataTransfer.files); });
+    vFileQ.addEventListener('change', () => { if (vFileQ.files.length) handleVideoQuestions(vFileQ.files); });
+
+    async function handleVideoQuestions(fileOrFiles) {
+        const files = fileOrFiles instanceof FileList ? Array.from(fileOrFiles) : [fileOrFiles];
+        for (const f of files) {
+            if (!f.name.endsWith('.docx')) { showToast('Apenas .docx', true); return; }
+        }
+        const form = new FormData();
+        for (const f of files) form.append('files', f);
+        try {
+            const res = await fetch('/api/oqm/video/upload-questions', { method: 'POST', body: form });
+            if (!res.ok) { const e = await res.json(); throw new Error(e.erro); }
+            const data = await res.json();
+            const label = files.length > 1 ? `${files.length} arquivos combinados` : files[0].name;
+            document.getElementById('videoQuestionsName').textContent = label;
+            document.getElementById('videoQuestionsCount').textContent = data.count;
+            document.getElementById('videoQuestionsStatus').classList.remove('hidden');
+            vUpQ.classList.add('hidden');
+            videoQuestionsUploaded = true;
+            checkMergeReady();
+        } catch (e) { showToast(e.message, true); }
+    }
+
+    // Upload vídeos
+    const vUpV = document.getElementById('videoUploadVideos');
+    const vFileV = document.getElementById('videoFileVideos');
+    vUpV.addEventListener('click', () => vFileV.click());
+    vUpV.addEventListener('dragover', e => { e.preventDefault(); vUpV.classList.add('dragover'); });
+    vUpV.addEventListener('dragleave', () => vUpV.classList.remove('dragover'));
+    vUpV.addEventListener('drop', e => { e.preventDefault(); vUpV.classList.remove('dragover'); if (e.dataTransfer.files.length) handleVideoVideos(e.dataTransfer.files[0]); });
+    vFileV.addEventListener('change', () => { if (vFileV.files.length) handleVideoVideos(vFileV.files[0]); });
+
+    async function handleVideoVideos(file) {
+        if (!file.name.endsWith('.docx')) { showToast('Apenas .docx', true); return; }
+        const form = new FormData();
+        form.append('file', file);
+        try {
+            const res = await fetch('/api/oqm/video/upload-videos', { method: 'POST', body: form });
+            if (!res.ok) { const e = await res.json(); throw new Error(e.erro); }
+            const data = await res.json();
+            document.getElementById('videoVideosName').textContent = file.name;
+            document.getElementById('videoVideosCount').textContent = data.count;
+            document.getElementById('videoVideosStatus').classList.remove('hidden');
+            vUpV.classList.add('hidden');
+            videoVideosUploaded = true;
+            checkMergeReady();
+        } catch (e) { showToast(e.message, true); }
+    }
+
+    function checkMergeReady() {
+        document.getElementById('btnMergeVideos').disabled = !(videoQuestionsUploaded && videoVideosUploaded);
+    }
+
+    async function mergeVideos() {
+        const btn = document.getElementById('btnMergeVideos');
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner"></span>Inserindo vídeos...';
+        try {
+            const res = await fetch('/api/oqm/video/merge', { method: 'POST' });
+            if (!res.ok) { const e = await res.json(); throw new Error(e.erro); }
+            const data = await res.json();
+            const el = document.getElementById('videoMergeResult');
+            el.classList.remove('hidden');
+            el.innerHTML = `<div class="summary-grid">
+                <div class="summary-card ok"><div class="number">${data.matched}</div><div class="label">Vídeos Inseridos</div></div>
+                <div class="summary-card ${data.not_found > 0 ? 'warn' : 'ok'}"><div class="number">${data.not_found}</div><div class="label">IDs Não Encontrados</div></div>
+            </div>` + (data.missing_ids?.length ? `<p style="color:#f59e0b;font-size:12px">IDs não encontrados: ${data.missing_ids.join(', ')}</p>` : '');
+            document.getElementById('videoDownloadActions').classList.remove('hidden');
+        } catch (e) { showToast(e.message, true); }
+        finally { btn.disabled = false; btn.textContent = 'Inserir Vídeos nas Questões'; }
+    }
+
+    function downloadVideoResult() {
+        window.location.href = '/api/oqm/video/download';
+    }
+
+    function showToast(msg, isError = false) {
+        const toast = document.createElement('div');
+        toast.className = 'toast' + (isError ? ' error' : '');
+        toast.textContent = msg;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 4000);
+    }
+    </script>
+</body>
+</html>

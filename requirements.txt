@@ -2,3 +2,6 @@ fastapi
 uvicorn[standard]
 pypdf
 python-multipart
+python-docx
+lxml
+anthropic

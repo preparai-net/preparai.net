@@ -3,10 +3,11 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, RedirectResponse, JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 from app.routes.gerar import router as gerar_router
+from app.routes.plataformaoqm import router as oqm_router
 from app.auth import verify_password, create_token, verify_token, COOKIE_NAME
 import os
 
-app = FastAPI(title="FisioMED - Gerador de Documentos")
+app = FastAPI(title="PreparAI — FisioMED + PlataformaOQM")
 
 # ========================================
 # MIDDLEWARE DE AUTENTICAÇÃO
@@ -22,6 +23,10 @@ class AuthMiddleware(BaseHTTPMiddleware):
 
         # Rotas públicas
         if path in self.PUBLIC_PATHS:
+            return await call_next(request)
+
+        # PlataformaOQM — sem autenticação
+        if path.startswith("/plataformaoqm") or path.startswith("/api/oqm"):
             return await call_next(request)
 
         # Assets do login (logo) — permitir sem auth
@@ -50,6 +55,7 @@ class AuthMiddleware(BaseHTTPMiddleware):
 
 app.add_middleware(AuthMiddleware)
 app.include_router(gerar_router)
+app.include_router(oqm_router)
 
 # ========================================
 # ROTAS DE AUTENTICAÇÃO
@@ -101,9 +107,13 @@ async def login_page():
 assets_dir = os.path.join(os.path.dirname(__file__), "assets")
 app.mount("/fisiomed/assets", StaticFiles(directory=assets_dir), name="assets")
 
-# Frontend (protegido pelo middleware)
+# Frontend FisioMED (protegido pelo middleware)
 static_dir = os.path.join(os.path.dirname(__file__), "static")
 app.mount("/fisiomed", StaticFiles(directory=static_dir, html=True), name="static")
+
+# Frontend PlataformaOQM (sem autenticação)
+oqm_static_dir = os.path.join(os.path.dirname(__file__), "static_oqm")
+app.mount("/plataformaoqm", StaticFiles(directory=oqm_static_dir, html=True), name="static_oqm")
 
 
 @app.get("/")
