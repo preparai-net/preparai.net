@@ -53,7 +53,9 @@ REQUIRED_TAGS = [
     '[VÍDEO]',
 ]
 
-VIDEO_URL = 'https://www.youtube.com/@ortopediaoqm/'
+import os as _os_for_video
+# URL placeholder de vídeo inserido nas questões. Configurável via env var DEFAULT_VIDEO_URL.
+VIDEO_URL = _os_for_video.environ.get('DEFAULT_VIDEO_URL', 'https://example.com/video-pendente')
 
 
 # =====================================================

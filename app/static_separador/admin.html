@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin · PreparAI / ESC</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', system-ui, sans-serif; background: #050816; color: #f1f5f9; min-height: 100vh; }
+
+  /* Header igual à landing */
+  .bg-grid { position: fixed; inset: 0; z-index: -3;
+    background-image:
+      radial-gradient(ellipse at 20% 10%, rgba(168, 85, 247, 0.10), transparent 50%),
+      radial-gradient(ellipse at 80% 90%, rgba(0, 217, 255, 0.08), transparent 50%);
+  }
+  header {
+    position: sticky; top: 0; z-index: 50;
+    backdrop-filter: blur(16px);
+    background: rgba(5, 8, 22, 0.7);
+    border-bottom: 1px solid rgba(168, 85, 247, 0.15);
+  }
+  .nav { max-width: 1100px; margin: 0 auto; padding: 14px 28px; display: flex; align-items: center; gap: 16px; }
+  .logo { display: flex; align-items: center; gap: 10px; text-decoration: none; color: #f1f5f9; }
+  .logo-mark {
+    width: 32px; height: 32px; border-radius: 8px;
+    background: linear-gradient(135deg, #00d9ff, #a855f7);
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 0 24px rgba(168, 85, 247, 0.5);
+    font-family: 'JetBrains Mono', monospace; font-weight: 700; color: white;
+  }
+  .logo-stack { display: flex; flex-direction: column; }
+  .logo-name { font-weight: 800; font-size: 16px; letter-spacing: -0.02em; }
+  .logo-name b { background: linear-gradient(90deg, #00d9ff, #a855f7); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+  .logo-sub { font-family: 'JetBrains Mono', monospace; font-size: 9px; color: #64748b; letter-spacing: 0.3em; margin-top: -2px; }
+  .spacer { flex: 1; }
+  .nav-link { color: #cbd5e1; text-decoration: none; font-size: 13px; padding: 7px 12px; border-radius: 6px; transition: all 0.15s; }
+  .nav-link:hover { color: #fff; background: rgba(255,255,255,0.05); }
+  .user-chip { display: flex; align-items: center; gap: 8px; padding: 5px 10px; background: rgba(17,25,54,0.6); border: 1px solid rgba(168,85,247,0.15); border-radius: 999px; font-size: 12px; }
+  .user-chip img { width: 22px; height: 22px; border-radius: 50%; }
+
+  .container { max-width: 1100px; margin: 0 auto; padding: 32px 28px; }
+
+  .card {
+    background: rgba(17, 25, 54, 0.5); border: 1px solid rgba(168, 85, 247, 0.15);
+    border-radius: 14px; padding: 24px; margin-bottom: 20px; backdrop-filter: blur(12px);
+  }
+  .card h2 { font-size: 17px; font-weight: 700; margin-bottom: 18px; }
+
+  .form-row { display: grid; grid-template-columns: 1fr 130px auto; gap: 10px; align-items: end; margin-bottom: 14px; }
+  @media (max-width: 720px) { .form-row { grid-template-columns: 1fr; } }
+  .field label { display: block; font-size: 11px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 6px; }
+  .field input, .field select {
+    width: 100%; background: #0f172a; border: 1px solid #334155; color: #f1f5f9;
+    padding: 10px 12px; border-radius: 8px; font-size: 14px; font-family: inherit;
+  }
+  .field input:focus, .field select:focus { outline: none; border-color: #a855f7; box-shadow: 0 0 0 3px rgba(168,85,247,0.15); }
+
+  .tools-row { display: flex; gap: 10px; flex-wrap: wrap; margin: 12px 0 6px; }
+  .tool-chk {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 14px; background: #0f172a; border: 1px solid #334155;
+    border-radius: 8px; cursor: pointer; font-size: 13px; user-select: none;
+    transition: all 0.15s;
+  }
+  .tool-chk:hover { border-color: #a855f7; }
+  .tool-chk input { accent-color: #a855f7; cursor: pointer; }
+  .tool-chk.checked { background: rgba(168, 85, 247, 0.12); border-color: #a855f7; }
+  .tools-row.disabled { opacity: 0.4; pointer-events: none; }
+
+  .btn {
+    background: linear-gradient(135deg, #00d9ff, #a855f7); color: white;
+    border: none; padding: 11px 22px; border-radius: 8px;
+    font-size: 14px; font-weight: 600; cursor: pointer;
+    box-shadow: 0 4px 16px rgba(168,85,247,0.3); transition: transform 0.15s, box-shadow 0.15s;
+  }
+  .btn:hover { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(168,85,247,0.5); }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+  .btn.danger { background: rgba(239,68,68,0.12); color: #fca5a5; border: 1px solid rgba(239,68,68,0.4); padding: 5px 10px; font-size: 11px; box-shadow: none; }
+  .btn.danger:hover { background: rgba(239,68,68,0.2); }
+  .btn.ghost { background: rgba(15,23,42,0.7); color: #cbd5e1; border: 1px solid #334155; box-shadow: none; padding: 6px 12px; font-size: 12px; }
+  .btn.ghost:hover { border-color: #a855f7; color: #fff; }
+
+  table { width: 100%; border-collapse: collapse; }
+  th { text-align: left; padding: 12px 10px; color: #94a3b8; font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; border-bottom: 1px solid #1e293b; font-weight: 600; }
+  td { padding: 14px 10px; border-bottom: 1px solid #1e293b; font-size: 14px; vertical-align: middle; }
+  tr:hover { background: rgba(168, 85, 247, 0.04); }
+
+  .role-badge { font-size: 10px; padding: 3px 9px; border-radius: 999px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; font-family: 'JetBrains Mono', monospace; }
+  .role-admin { background: rgba(245,158,11,0.15); color: #fbbf24; border: 1px solid rgba(245,158,11,0.3); }
+  .role-user { background: rgba(0,217,255,0.12); color: #67e8f9; border: 1px solid rgba(0,217,255,0.3); }
+
+  .tool-tag {
+    display: inline-block; font-size: 10px; padding: 3px 8px; border-radius: 5px;
+    margin: 2px 4px 2px 0; font-family: 'JetBrains Mono', monospace; font-weight: 600;
+    background: rgba(168,85,247,0.15); border: 1px solid rgba(168,85,247,0.3); color: #d8b4fe;
+  }
+  .tool-tag.muted { background: rgba(100, 116, 139, 0.15); border-color: rgba(100,116,139,0.3); color: #94a3b8; opacity: 0.5; }
+
+  .status { padding: 12px 14px; border-radius: 8px; font-size: 13px; margin-top: 14px; display: none; }
+  .status.show { display: block; }
+  .status.success { background: rgba(34,197,94,0.12); border: 1px solid rgba(34,197,94,0.3); color: #86efac; }
+  .status.error { background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.3); color: #fca5a5; }
+  .empty { color: #64748b; font-style: italic; text-align: center; padding: 30px; }
+
+  .edit-mode { display: flex; gap: 6px; flex-wrap: wrap; }
+  .edit-mode .tool-chk { padding: 5px 10px; font-size: 11px; }
+</style>
+</head>
+<body>
+
+<div class="bg-grid"></div>
+
+<header>
+  <nav class="nav">
+    <a href="/" class="logo">
+      <span class="logo-mark">{P}</span>
+      <span class="logo-stack">
+        <span class="logo-name"><b>Prepar</b>AI</span>
+        <span class="logo-sub">ESC</span>
+      </span>
+    </a>
+    <div class="spacer"></div>
+    <a href="/" class="nav-link">Início</a>
+    <a href="/auth/logout" class="nav-link">Sair</a>
+    <div class="user-chip" id="userChip"></div>
+  </nav>
+</header>
+
+<div class="container">
+
+  <div class="card">
+    <h2>Adicionar usuário</h2>
+    <form id="addForm">
+      <div class="form-row">
+        <div class="field">
+          <label>Email Google</label>
+          <input type="email" id="emailInput" placeholder="email@gmail.com" required>
+        </div>
+        <div class="field">
+          <label>Tipo</label>
+          <select id="roleSelect">
+            <option value="user">Usuário</option>
+            <option value="admin">Administrador</option>
+          </select>
+        </div>
+        <button type="submit" class="btn">+ Adicionar</button>
+      </div>
+      <div class="field" id="toolsField">
+        <label>Ferramentas autorizadas</label>
+        <div class="tools-row" id="toolsRow"></div>
+      </div>
+    </form>
+    <div id="status" class="status"></div>
+  </div>
+
+  <div class="card">
+    <h2>Usuários autorizados</h2>
+    <table>
+      <thead><tr>
+        <th>Email</th>
+        <th style="width:110px">Tipo</th>
+        <th>Ferramentas</th>
+        <th style="width:160px"></th>
+      </tr></thead>
+      <tbody id="listBody"></tbody>
+    </table>
+  </div>
+
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+let TOOLS = [];
+
+function escapeHtml(s){return String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function setStatus(msg,t){const e=$('status');e.textContent=msg;e.className='status show '+(t||'success');setTimeout(()=>e.classList.remove('show'),4500);}
+
+async function loadUser() {
+  try {
+    const res = await fetch('/auth/me');
+    if (!res.ok) { location.href = '/login?next=/admin'; return; }
+    const u = await res.json();
+    if (!u.is_admin) { document.body.innerHTML = '<div style="padding:60px;text-align:center;color:#fca5a5">Acesso restrito a administradores.</div>'; return; }
+    const chip = $('userChip');
+    if (u.picture) chip.innerHTML = `<img src="${u.picture}" alt=""><span>${escapeHtml(u.email)}</span>`;
+    else chip.innerHTML = `<span>${escapeHtml(u.email)}</span>`;
+  } catch (e) { location.href = '/login?next=/admin'; }
+}
+
+function renderToolsCheckboxes(containerId, selected = [], idPrefix = 'tool') {
+  const c = document.getElementById(containerId);
+  c.innerHTML = TOOLS.map(t => {
+    const checked = selected.includes(t.key) ? 'checked' : '';
+    return `<label class="tool-chk ${checked?'checked':''}">
+      <input type="checkbox" data-tool="${t.key}" ${checked}>
+      <span>${escapeHtml(t.label)}</span>
+    </label>`;
+  }).join('');
+  c.querySelectorAll('input').forEach(i => i.addEventListener('change', () => {
+    i.parentElement.classList.toggle('checked', i.checked);
+  }));
+}
+
+function getCheckedTools(containerId) {
+  return [...document.querySelectorAll(`#${containerId} input:checked`)].map(i => i.dataset.tool);
+}
+
+async function loadList() {
+  const res = await fetch('/api/admin/allowlist');
+  if (!res.ok) { setStatus('Erro carregando lista', 'error'); return; }
+  const data = await res.json();
+  TOOLS = data.tools || [];
+  renderToolsCheckboxes('toolsRow', TOOLS.map(t => t.key));
+  toggleToolsField();
+  render(data);
+}
+
+function toggleToolsField() {
+  const role = $('roleSelect').value;
+  $('toolsField').style.opacity = role === 'admin' ? '0.4' : '1';
+  $('toolsRow').classList.toggle('disabled', role === 'admin');
+}
+
+function render(data) {
+  const tbody = $('listBody');
+  tbody.innerHTML = '';
+  const rows = [];
+  (data.admins || []).forEach(e => rows.push({email: e, role: 'admin'}));
+  (data.users || []).forEach(u => rows.push({email: u.email, role: 'user', tools: u.tools || []}));
+  if (!rows.length) {
+    tbody.innerHTML = '<tr><td colspan="4" class="empty">Nenhum usuário cadastrado.</td></tr>';
+    return;
+  }
+  rows.forEach(r => {
+    const tr = document.createElement('tr');
+    let toolsHtml;
+    if (r.role === 'admin') {
+      toolsHtml = TOOLS.map(t => `<span class="tool-tag">${escapeHtml(t.label)}</span>`).join('');
+    } else {
+      toolsHtml = TOOLS.map(t => {
+        const has = (r.tools || []).includes(t.key);
+        return `<span class="tool-tag ${has?'':'muted'}">${escapeHtml(t.label)}</span>`;
+      }).join('');
+    }
+    tr.innerHTML = `
+      <td>${escapeHtml(r.email)}</td>
+      <td><span class="role-badge ${r.role==='admin'?'role-admin':'role-user'}">${r.role}</span></td>
+      <td>${toolsHtml}</td>
+      <td style="text-align:right">
+        ${r.role==='user' ? `<button class="btn ghost" data-edit="${escapeHtml(r.email)}">Editar</button>` : ''}
+        <button class="btn danger" data-rm="${escapeHtml(r.email)}">Remover</button>
+      </td>`;
+    tbody.appendChild(tr);
+  });
+  tbody.querySelectorAll('[data-rm]').forEach(b => b.onclick = () => removeEmail(b.dataset.rm));
+  tbody.querySelectorAll('[data-edit]').forEach(b => b.onclick = () => editUser(b.dataset.edit, rows.find(r=>r.email===b.dataset.edit)?.tools || []));
+}
+
+function editUser(email, currentTools) {
+  const tr = [...document.querySelectorAll('#listBody tr')].find(r => r.querySelector('[data-edit]')?.dataset.edit === email);
+  if (!tr) return;
+  const toolsCell = tr.children[2];
+  toolsCell.innerHTML = `<div class="edit-mode" id="editTools-${btoa(email).replace(/=/g,'')}"></div>`;
+  const tmpId = 'editTools-' + btoa(email).replace(/=/g,'');
+  const c = document.getElementById(tmpId);
+  c.innerHTML = TOOLS.map(t => {
+    const checked = currentTools.includes(t.key) ? 'checked' : '';
+    return `<label class="tool-chk ${checked?'checked':''}"><input type="checkbox" data-tool="${t.key}" ${checked}><span>${escapeHtml(t.label)}</span></label>`;
+  }).join('');
+  c.querySelectorAll('input').forEach(i => i.addEventListener('change', () => i.parentElement.classList.toggle('checked', i.checked)));
+  // Action buttons
+  const actions = tr.children[3];
+  actions.innerHTML = `<button class="btn ghost" data-save="${escapeHtml(email)}">Salvar</button> <button class="btn ghost" id="cancelEdit">Cancelar</button>`;
+  actions.querySelector('[data-save]').onclick = async () => {
+    const newTools = [...c.querySelectorAll('input:checked')].map(i => i.dataset.tool);
+    const res = await fetch('/api/admin/allowlist/update', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({email, tools: newTools})
+    });
+    const data = await res.json();
+    if (!res.ok) { setStatus(data.error||'Erro', 'error'); return; }
+    setStatus(`Atualizado: ${email}`, 'success');
+    render(data.allowlist);
+  };
+  actions.querySelector('#cancelEdit').onclick = () => loadList();
+}
+
+async function addEmail(e) {
+  e.preventDefault();
+  const email = $('emailInput').value.trim().toLowerCase();
+  const role = $('roleSelect').value;
+  const tools = role === 'admin' ? [] : getCheckedTools('toolsRow');
+  if (!email) return;
+  if (role === 'user' && !tools.length) { setStatus('Selecione ao menos uma ferramenta para o usuário', 'error'); return; }
+  const res = await fetch('/api/admin/allowlist/add', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({email, role, tools})
+  });
+  const data = await res.json();
+  if (!res.ok) { setStatus(data.error||'Erro', 'error'); return; }
+  setStatus(`Adicionado: ${email}`, 'success');
+  $('emailInput').value = '';
+  $('roleSelect').value = 'user';
+  toggleToolsField();
+  renderToolsCheckboxes('toolsRow', TOOLS.map(t => t.key));
+  render(data.allowlist);
+}
+
+async function removeEmail(email) {
+  if (!confirm('Remover ' + email + '?')) return;
+  const res = await fetch('/api/admin/allowlist/remove', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({email})
+  });
+  const data = await res.json();
+  if (!res.ok) { setStatus(data.error||'Erro', 'error'); return; }
+  setStatus(`Removido: ${email}`, 'success');
+  render(data.allowlist);
+}
+
+$('roleSelect').addEventListener('change', toggleToolsField);
+$('addForm').addEventListener('submit', addEmail);
+(async () => { await loadUser(); await loadList(); })();
+</script>
+</body>
+</html>

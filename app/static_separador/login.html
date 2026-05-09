@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Login — PreparAI</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    color: #e2e8f0; min-height: 100vh;
+    display: flex; align-items: center; justify-content: center; padding: 20px;
+  }
+  .card {
+    background: #1e293b; border: 1px solid #334155; border-radius: 16px;
+    padding: 40px 36px; max-width: 420px; width: 100%;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+  }
+  h1 { font-size: 24px; font-weight: 700; color: #f59e0b; margin-bottom: 6px; text-align: center; }
+  .subtitle { color: #94a3b8; font-size: 14px; text-align: center; margin-bottom: 32px; }
+  .login-btn {
+    width: 100%; padding: 14px 20px; border-radius: 10px; border: 1px solid #475569;
+    background: #fff; color: #1f2937; font-size: 15px; font-weight: 600;
+    cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 12px;
+    transition: all 0.2s;
+  }
+  .login-btn:hover { background: #f8fafc; transform: translateY(-1px); box-shadow: 0 8px 20px rgba(0,0,0,0.3); }
+  .login-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .login-btn img { width: 20px; height: 20px; }
+  .error {
+    margin-top: 18px; padding: 12px 14px; border-radius: 8px;
+    background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.4);
+    color: #fca5a5; font-size: 13px; display: none;
+  }
+  .error.show { display: block; }
+  .footer { margin-top: 28px; font-size: 12px; color: #64748b; text-align: center; line-height: 1.6; }
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>PreparAI</h1>
+  <p class="subtitle">Entre com sua conta Google autorizada</p>
+
+  <button id="googleBtn" class="login-btn" disabled>
+    <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="">
+    Entrar com Google
+  </button>
+
+  <div id="errorBox" class="error"></div>
+
+  <p class="footer">
+    Acesso restrito a usuários autorizados.<br>
+    Se sua conta não estiver na lista, entre em contato com o administrador.
+  </p>
+</div>
+
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script>
+const params = new URLSearchParams(location.search);
+const next = params.get('next') || '/';
+const errorBox = document.getElementById('errorBox');
+const btn = document.getElementById('googleBtn');
+
+function showError(msg) {
+  errorBox.textContent = msg;
+  errorBox.classList.add('show');
+}
+
+async function init() {
+  try {
+    const res = await fetch('/auth/config');
+    const cfg = await res.json();
+    if (!cfg.google_client_id) {
+      showError('GOOGLE_CLIENT_ID não configurado no servidor.');
+      return;
+    }
+    const tryInit = () => {
+      if (!window.google || !google.accounts || !google.accounts.oauth2) {
+        setTimeout(tryInit, 200);
+        return;
+      }
+      const client = google.accounts.oauth2.initTokenClient({
+        client_id: cfg.google_client_id,
+        scope: 'email profile openid',
+        callback: async (response) => {
+          if (response.error || !response.access_token) {
+            showError('Falha no login Google: ' + (response.error || 'sem token'));
+            return;
+          }
+          try {
+            const r = await fetch('/auth/google', {
+              method: 'POST',
+              headers: {'Content-Type': 'application/json'},
+              body: JSON.stringify({token: response.access_token})
+            });
+            const data = await r.json();
+            if (!r.ok) {
+              showError(data.error || 'Acesso negado');
+              return;
+            }
+            location.href = next;
+          } catch (e) {
+            showError('Erro de rede: ' + e.message);
+          }
+        }
+      });
+      btn.disabled = false;
+      btn.addEventListener('click', () => {
+        errorBox.classList.remove('show');
+        client.requestAccessToken();
+      });
+    };
+    tryInit();
+  } catch (e) {
+    showError('Erro carregando configuração: ' + e.message);
+  }
+}
+init();
+</script>
+</body>
+</html>

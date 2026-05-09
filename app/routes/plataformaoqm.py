@@ -1,5 +1,5 @@
 """
-Rotas da Plataforma OQM — Preparação de banco de questões para upload.
+Rotas de Edição de Questões — preparação de banco de questões para upload.
 Completamente separado do Fisiomed.
 """
 import os
@@ -21,7 +21,7 @@ from app.generators.taxonomy import suggest_classification, get_subtemas_for_cat
 # Namespace OOXML
 _W = '{http://schemas.openxmlformats.org/wordprocessingml/2006/main}'
 
-router = APIRouter(prefix="/api/oqm", tags=["PlataformaOQM"])
+router = APIRouter(prefix="/api/questoes", tags=["Edição de Questões"])
 
 # Diretório de trabalho persistente por sessão
 WORK_DIR = os.path.join(tempfile.gettempdir(), 'preparai_sessions')
@@ -417,6 +417,105 @@ async def upload_docx(files: List[UploadFile] = File(...)):
         'session_id': session_id,
         'files_count': len(file_entries),
         'files_names': [e['original_name'] for e in file_entries],
+        'analysis': {
+            'total_questions': len(all_questions),
+            'duplicates': [],
+            'repeated_numbers': [],
+            'media_files': total_media,
+        },
+        'audit': {
+            'issues': all_issues,
+            'summary': audit_summary,
+        },
+        'questions': all_questions,
+    })
+
+
+@router.post("/test-upload")
+async def test_upload():
+    """
+    Endpoint de teste: carrega TESTE_20_QUESTOES.docx do filesystem local
+    e processa como se fosse um upload normal. Evita transferência de arquivo.
+    """
+    global _active_session
+    import uuid
+
+    # Localizar arquivo de teste
+    test_file = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'TESTE_20_QUESTOES.docx')
+    if not os.path.exists(test_file):
+        return JSONResponse(status_code=404, content={'erro': f'Arquivo de teste não encontrado: {test_file}'})
+
+    session_id = str(uuid.uuid4())[:8]
+    session_dir = _get_session_dir(session_id)
+
+    # Copiar arquivo para sessão
+    fname = 'TESTE_20_QUESTOES.docx'
+    fpath = os.path.join(session_dir, f'input_0_{fname}')
+    shutil.copy2(test_file, fpath)
+
+    file_entries = [{'index': 0, 'original_name': fname, 'input_path': fpath}]
+    all_questions = []
+    all_issues = []
+    total_media = 0
+
+    for entry in file_entries:
+        try:
+            work_sub = os.path.join(session_dir, f'work_{entry["index"]}')
+            processor = PreparaiProcessor(entry['input_path'], work_dir=work_sub)
+            analysis = processor.phase0_analyze()
+            audit = processor.phase1_audit()
+
+            for q in analysis['questions']:
+                q['_file_index'] = entry['index']
+                q['_file_name'] = entry['original_name']
+                cat_full = q['categoria'] or ''
+                if ' | ' in cat_full:
+                    cat_parts = cat_full.split(' | ', 1)
+                    cat_only = cat_parts[0].strip()
+                    sub_only = cat_parts[1].strip()
+                elif ' - ' in cat_full:
+                    cat_parts = cat_full.split(' - ', 1)
+                    cat_only = cat_parts[0].strip()
+                    sub_only = cat_parts[1].strip()
+                else:
+                    cat_only = cat_full
+                    sub_only = ''
+
+                suggestion = suggest_classification(q.get('enunciado', ''))
+                if suggestion:
+                    q['suggested_category'] = suggestion.get('categoria', '')
+                    q['suggested_subtema'] = suggestion.get('subtema', '')
+                    q['suggestion_score'] = suggestion.get('score', 0)
+                else:
+                    q['suggested_category'] = cat_only if cat_only else ''
+                    q['suggested_subtema'] = sub_only if sub_only else ''
+                    q['suggestion_score'] = 0
+
+                q['category_display'] = q.get('suggested_category', cat_only)
+                q['subtema_display'] = q.get('suggested_subtema', sub_only)
+
+            all_questions.extend(analysis['questions'])
+            all_issues.extend(audit.get('issues', []))
+            total_media += analysis.get('media_count', 0)
+
+            entry['processor'] = processor
+            entry['analysis'] = analysis
+            entry['audit'] = audit
+        except Exception as e:
+            all_issues.append(f'[{entry["original_name"]}] Erro: {str(e)}')
+
+    audit_summary = f'{len(all_issues)} problemas' if all_issues else 'Nenhum problema encontrado'
+
+    _active_session = {
+        'id': session_id,
+        'dir': session_dir,
+        'file_entries': file_entries,
+        'total_questions': len(all_questions),
+    }
+
+    return JSONResponse(content={
+        'session_id': session_id,
+        'total_files': len(file_entries),
         'analysis': {
             'total_questions': len(all_questions),
             'duplicates': [],

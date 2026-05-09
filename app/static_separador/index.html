@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Separador de PDF — PreparAI</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    background: #0f172a; color: #e2e8f0; min-height: 100vh;
+  }
+  .header {
+    background: linear-gradient(135deg, #1e3a5f 0%, #0d2137 100%);
+    padding: 16px 32px; border-bottom: 2px solid #f59e0b;
+    display: flex; align-items: center; gap: 16px;
+  }
+  .header h1 { font-size: 20px; color: #f59e0b; font-weight: 700; }
+  .header .badge { background: #f59e0b; color: #0f172a; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 4px; }
+  .header .spacer { flex: 1; }
+  .header .user { display: flex; align-items: center; gap: 10px; font-size: 13px; color: #cbd5e1; }
+  .header .user img { width: 28px; height: 28px; border-radius: 50%; }
+  .header .nav-link { color: #cbd5e1; text-decoration: none; font-size: 13px; padding: 6px 12px; border-radius: 6px; transition: all 0.15s; }
+  .header .nav-link:hover { background: rgba(255,255,255,0.08); color: #fff; }
+  .container { max-width: 980px; margin: 0 auto; padding: 28px 24px; }
+  .card { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 24px; margin-bottom: 20px; }
+  .card h2 { font-size: 16px; color: #f59e0b; margin-bottom: 16px; font-weight: 600; }
+  .drop-zone {
+    border: 2px dashed #475569; border-radius: 10px; padding: 40px 20px;
+    text-align: center; cursor: pointer; transition: all 0.2s; background: #0f172a;
+  }
+  .drop-zone:hover, .drop-zone.dragover { border-color: #f59e0b; background: #1e293b; }
+  .drop-zone input { display: none; }
+  .drop-zone .icon { font-size: 36px; margin-bottom: 8px; }
+  .drop-zone .hint { color: #94a3b8; font-size: 13px; margin-top: 6px; }
+  .file-info { padding: 14px 16px; background: #0f172a; border-radius: 8px; border: 1px solid #334155; display: flex; justify-content: space-between; align-items: center; }
+  .file-info .name { font-weight: 600; color: #e2e8f0; }
+  .file-info .meta { font-size: 12px; color: #94a3b8; margin-top: 2px; }
+  .file-info button { background: #ef4444; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; }
+  .options { display: grid; gap: 14px; }
+  .option-row { display: flex; gap: 12px; align-items: center; }
+  .option-row label { color: #cbd5e1; font-size: 14px; min-width: 180px; }
+  .option-row input[type=text], .option-row input[type=number], .option-row select {
+    flex: 1; background: #0f172a; border: 1px solid #475569; color: #e2e8f0;
+    padding: 8px 12px; border-radius: 6px; font-size: 14px;
+  }
+  .option-row input:focus, .option-row select:focus { outline: none; border-color: #f59e0b; }
+  .radio-group { display: flex; gap: 16px; flex-wrap: wrap; }
+  .radio-group label { display: flex; align-items: center; gap: 6px; min-width: auto; cursor: pointer; }
+  .btn { background: #f59e0b; color: #0f172a; border: none; padding: 12px 24px; border-radius: 8px; font-size: 14px; font-weight: 700; cursor: pointer; transition: all 0.2s; }
+  .btn:hover:not(:disabled) { background: #fbbf24; transform: translateY(-1px); }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn.secondary { background: #334155; color: #e2e8f0; }
+  .btn.secondary:hover:not(:disabled) { background: #475569; }
+  .actions { display: flex; gap: 10px; margin-top: 18px; }
+  .preview { max-height: 480px; overflow-y: auto; background: #0f172a; border: 1px solid #334155; border-radius: 8px; }
+  .preview table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .preview th { position: sticky; top: 0; background: #1e293b; color: #f59e0b; padding: 10px; text-align: left; border-bottom: 1px solid #334155; }
+  .preview td { padding: 8px 10px; border-bottom: 1px solid #1e293b; }
+  .preview tr:hover { background: #1e293b; }
+  .preview input[type=checkbox] { cursor: pointer; }
+  .preview .num { color: #94a3b8; font-weight: 600; min-width: 36px; }
+  .preview .pages { color: #94a3b8; font-size: 12px; white-space: nowrap; }
+  .preview .title-input {
+    width: 100%; background: transparent; border: 1px solid transparent;
+    color: #e2e8f0; padding: 4px 6px; border-radius: 4px; font-size: 13px;
+  }
+  .preview .title-input:focus { background: #0f172a; border-color: #475569; outline: none; }
+  .status {
+    padding: 12px 14px; border-radius: 8px; font-size: 13px; margin-top: 14px;
+    display: none;
+  }
+  .status.show { display: block; }
+  .status.info { background: rgba(59,130,246,0.15); border: 1px solid rgba(59,130,246,0.4); color: #93c5fd; }
+  .status.success { background: rgba(34,197,94,0.15); border: 1px solid rgba(34,197,94,0.4); color: #86efac; }
+  .status.error { background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.4); color: #fca5a5; }
+  .progress {
+    height: 8px; background: #0f172a; border-radius: 4px; overflow: hidden; margin-top: 10px;
+    border: 1px solid #334155; display: none;
+  }
+  .progress.show { display: block; }
+  .progress .bar { height: 100%; background: #f59e0b; width: 0%; transition: width 0.2s; }
+  .small { font-size: 12px; color: #94a3b8; }
+  .filename-preview {
+    background: #0f172a; border: 1px solid #334155; border-radius: 6px;
+    padding: 8px 12px; font-family: 'Consolas', monospace; font-size: 12px;
+    color: #f59e0b; word-break: break-all; margin-top: 6px;
+  }
+  .summary { display: flex; gap: 24px; flex-wrap: wrap; padding: 12px 0; font-size: 13px; }
+  .summary span { color: #94a3b8; }
+  .summary b { color: #f59e0b; }
+  .toolbar { display: flex; gap: 8px; padding: 8px 12px; background: #1e293b; border-bottom: 1px solid #334155; }
+  .toolbar button { background: #334155; color: #e2e8f0; border: none; padding: 5px 10px; border-radius: 4px; font-size: 12px; cursor: pointer; }
+  .toolbar button:hover { background: #475569; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>📄 Separador de PDF</h1>
+  <span class="badge">PreparAI</span>
+  <div class="spacer"></div>
+  <a href="/questoes" class="nav-link">Edição de Questões</a>
+  <a href="/admin" class="nav-link" id="adminLink" style="display:none">Admin</a>
+  <a href="/auth/logout" class="nav-link">Sair</a>
+  <div class="user" id="userBox"></div>
+</div>
+
+<div class="container">
+
+  <div class="card">
+    <h2>1. Selecione o PDF</h2>
+    <div id="dropZone" class="drop-zone">
+      <div class="icon">📥</div>
+      <div><b>Clique ou arraste</b> um arquivo PDF aqui</div>
+      <div class="hint">Aceita livros grandes (típicamente 500–2000 páginas). PDFs maiores que <span id="limitMb">100</span> MB são processados localmente para máxima velocidade.</div>
+      <input type="file" id="fileInput" accept="application/pdf">
+    </div>
+    <div id="fileBox" style="display:none;margin-top:12px"></div>
+  </div>
+
+  <div class="card" id="optionsCard" style="display:none">
+    <h2>2. Opções de Detecção</h2>
+    <div class="options">
+      <div class="option-row">
+        <label>Método de detecção</label>
+        <div class="radio-group">
+          <label><input type="radio" name="method" value="auto" checked> Automático (recomendado)</label>
+          <label><input type="radio" name="method" value="bookmarks"> Apenas marcadores</label>
+          <label><input type="radio" name="method" value="regex"> Detectar pela página de capa</label>
+        </div>
+      </div>
+    </div>
+    <div class="actions">
+      <button id="analyzeBtn" class="btn">🔍 Analisar capítulos</button>
+    </div>
+    <div id="status" class="status"></div>
+    <div id="progress" class="progress"><div class="bar" id="progressBar"></div></div>
+  </div>
+
+  <div class="card" id="previewCard" style="display:none">
+    <h2>3. Capítulos detectados</h2>
+
+    <div class="summary">
+      <span>Método: <b id="usedMethod">—</b></span>
+      <span>Páginas no PDF: <b id="totalPages">—</b></span>
+      <span>Capítulos: <b id="chaptersCount">—</b></span>
+      <span>Selecionados: <b id="selectedCount">—</b></span>
+    </div>
+
+    <div class="options" style="margin-bottom:14px">
+      <div class="option-row">
+        <label>Prefixo do nome</label>
+        <input type="text" id="prefixInput" value="Livro" placeholder="Ex: Scott, Insall, Campbell">
+      </div>
+      <div class="option-row">
+        <label>Tamanho máx. nome capítulo</label>
+        <input type="number" id="maxTitleLen" value="80" min="20" max="200" style="max-width:120px">
+        <span class="small">caracteres</span>
+      </div>
+      <div class="option-row">
+        <label>Pré-visualização</label>
+        <div class="filename-preview" id="filenamePreview" style="flex:1">—</div>
+      </div>
+    </div>
+
+    <div class="preview">
+      <div class="toolbar">
+        <button id="selectAllBtn">Selecionar todos</button>
+        <button id="deselectAllBtn">Desmarcar todos</button>
+        <span style="margin-left:auto;color:#94a3b8;font-size:12px;align-self:center">Você pode editar cada nome</span>
+      </div>
+      <table>
+        <thead><tr>
+          <th style="width:40px"></th>
+          <th style="width:50px">Cap</th>
+          <th>Título</th>
+          <th style="width:120px">Páginas</th>
+        </tr></thead>
+        <tbody id="chaptersBody"></tbody>
+      </table>
+    </div>
+
+    <div class="actions">
+      <button id="generateBtn" class="btn">📦 Gerar ZIP com PDFs</button>
+      <button id="resetBtn" class="btn secondary">🔄 Recomeçar</button>
+    </div>
+    <div id="genStatus" class="status"></div>
+    <div id="genProgress" class="progress"><div class="bar" id="genProgressBar"></div></div>
+  </div>
+
+</div>
+
+<script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://unpkg.com/jszip@3.10.1/dist/jszip.min.js"></script>
+<script src="/static_separador/app.js"></script>
+
+</body>
+</html>

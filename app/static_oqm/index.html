@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Plataforma OQM — Preparação de Banco</title>
+    <title>Edição de Questões — Preparação de Banco</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', system-ui, sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; }
@@ -12,6 +12,18 @@
         .header h1 { font-size: 22px; color: #f59e0b; font-weight: 700; }
         .header .badge { background: #f59e0b; color: #0f172a; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 4px; }
         .header .subtitle { color: #94a3b8; font-size: 13px; margin-left: auto; }
+
+        /* Cronômetro de consulta */
+        .cronometro-box { display: flex; align-items: center; gap: 10px; margin-left: 16px; background: #0f172a; border: 1px solid #334155; border-radius: 10px; padding: 6px 14px; }
+        .cronometro-display { font-family: 'Consolas', 'Courier New', monospace; font-size: 22px; font-weight: 700; color: #f59e0b; min-width: 96px; text-align: center; letter-spacing: 1px; }
+        .cronometro-label { font-size: 9px; color: #64748b; text-transform: uppercase; letter-spacing: 1px; text-align: center; line-height: 1; margin-bottom: 2px; }
+        .cronometro-inner { display: flex; flex-direction: column; align-items: center; }
+        .cronometro-btns { display: flex; gap: 4px; }
+        .crono-btn { width: 28px; height: 28px; border-radius: 50%; border: 1px solid #475569; background: #1e293b; color: #94a3b8; cursor: pointer; font-size: 13px; display: flex; align-items: center; justify-content: center; transition: all 0.2s; padding: 0; }
+        .crono-btn:hover { border-color: #f59e0b; color: #f59e0b; }
+        .crono-btn.running { border-color: #22c55e; color: #22c55e; background: rgba(34,197,94,0.1); }
+        .cronometro-display.alerta { color: #ef4444; animation: pulseRed 1s ease-in-out infinite; }
+        @keyframes pulseRed { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
 
         .container { max-width: 1100px; margin: 0 auto; padding: 24px; }
 
@@ -155,9 +167,19 @@
 </head>
 <body>
     <div class="header">
-        <h1>Plataforma OQM</h1>
+        <h1>Edição de Questões</h1>
         <span class="badge">PREPARAI</span>
         <span class="subtitle">Preparação de Banco de Questões para Upload</span>
+        <div class="cronometro-box">
+            <div class="cronometro-inner">
+                <span class="cronometro-label">Consulta</span>
+                <span class="cronometro-display" id="cronoDisplay">00:00</span>
+            </div>
+            <div class="cronometro-btns">
+                <button class="crono-btn" id="cronoStartPause" title="Iniciar / Pausar" onclick="toggleCrono()">▶</button>
+                <button class="crono-btn" id="cronoReset" title="Resetar" onclick="resetCrono()">↺</button>
+            </div>
+        </div>
     </div>
 
     <div class="tab-bar">
@@ -204,9 +226,9 @@
                 <div class="phase-title">Configuração</div>
             </div>
             <div class="config-row">
-                <label>ID OQM inicial:</label>
+                <label>ID inicial:</label>
                 <input type="number" id="startOqm" value="1" min="1">
-                <span style="font-size:12px;color:#94a3b8">→ OQM00001, OQM00002, ...</span>
+                <span style="font-size:12px;color:#94a3b8">→ Numeração sequencial das questões</span>
             </div>
             <div class="config-row">
                 <label>API Key Claude:</label>
@@ -331,7 +353,7 @@
                 <div class="phase-num">1</div>
                 <div class="phase-title">Upload — Arquivo de Questões</div>
             </div>
-            <p style="font-size:13px;color:#94a3b8;margin-bottom:12px">Envie o .docx com questões já processadas (com OQM IDs). Os vídeos serão inseridos neste arquivo.</p>
+            <p style="font-size:13px;color:#94a3b8;margin-bottom:12px">Envie o .docx com questões já processadas (com IDs sequenciais). Os vídeos serão inseridos neste arquivo.</p>
             <div class="upload-area" id="videoUploadQuestions">
                 <input type="file" id="videoFileQuestions" accept=".docx" multiple>
                 <div class="upload-icon">📄</div>
@@ -348,7 +370,7 @@
                 <div class="phase-num">2</div>
                 <div class="phase-title">Upload — Arquivo de Vídeos</div>
             </div>
-            <p style="font-size:13px;color:#94a3b8;margin-bottom:12px">Envie o .docx com os IDs das questões e suas URLs de vídeo (formato: [NOME DA QUESTÃO] / OQMxxxxx / [VÍDEO] / URL).</p>
+            <p style="font-size:13px;color:#94a3b8;margin-bottom:12px">Envie o .docx com os IDs das questões e suas URLs de vídeo (formato: [NOME DA QUESTÃO] / IDxxxxx / [VÍDEO] / URL).</p>
             <div class="upload-area" id="videoUploadVideos">
                 <input type="file" id="videoFileVideos" accept=".docx">
                 <div class="upload-icon">🎬</div>
@@ -378,6 +400,62 @@
 
     <script>
     // =====================================================
+    // CRONÔMETRO DE CONSULTA
+    // =====================================================
+    let cronoInterval = null;
+    let cronoSeconds = 0;
+    let cronoRunning = false;
+    const CRONO_ALERTA_MIN = 20; // Alerta visual após 20 minutos
+
+    function updateCronoDisplay() {
+        const min = Math.floor(cronoSeconds / 60);
+        const sec = cronoSeconds % 60;
+        const display = document.getElementById('cronoDisplay');
+        display.textContent = String(min).padStart(2, '0') + ':' + String(sec).padStart(2, '0');
+        // Alerta visual se passar do tempo limite
+        if (min >= CRONO_ALERTA_MIN) {
+            display.classList.add('alerta');
+        } else {
+            display.classList.remove('alerta');
+        }
+    }
+
+    function startCrono() {
+        if (cronoRunning) return;
+        cronoRunning = true;
+        document.getElementById('cronoStartPause').textContent = '⏸';
+        document.getElementById('cronoStartPause').classList.add('running');
+        cronoInterval = setInterval(() => {
+            cronoSeconds++;
+            updateCronoDisplay();
+        }, 1000);
+    }
+
+    function pauseCrono() {
+        cronoRunning = false;
+        document.getElementById('cronoStartPause').textContent = '▶';
+        document.getElementById('cronoStartPause').classList.remove('running');
+        clearInterval(cronoInterval);
+    }
+
+    function toggleCrono() {
+        if (cronoRunning) { pauseCrono(); } else { startCrono(); }
+    }
+
+    function resetCrono() {
+        pauseCrono();
+        cronoSeconds = 0;
+        updateCronoDisplay();
+        // Reinicia automaticamente
+        startCrono();
+    }
+
+    // Iniciar automaticamente ao carregar a página
+    window.addEventListener('DOMContentLoaded', () => {
+        startCrono();
+    });
+
+    // =====================================================
     // STATE
     // =====================================================
     let sessionData = null;
@@ -387,7 +465,7 @@
     // Carregar taxonomia ao iniciar
     (async function loadTaxonomy() {
         try {
-            const res = await fetch('/api/oqm/taxonomy');
+            const res = await fetch('/api/questoes/taxonomy');
             if (res.ok) taxonomyData = await res.json();
         } catch(e) { console.warn('Taxonomia não carregada:', e); }
     })();
@@ -464,7 +542,7 @@
         }
 
         try {
-            const res = await fetch('/api/oqm/upload', { method: 'POST', body: form });
+            const res = await fetch('/api/questoes/upload', { method: 'POST', body: form });
             document.getElementById('uploadFill').style.width = '100%';
 
             if (!res.ok) { const e = await res.json(); throw new Error(e.erro || 'Erro no upload'); }
@@ -624,7 +702,7 @@
         btn.innerHTML = '<span class="spinner"></span>Auditando...';
 
         try {
-            const res = await fetch('/api/oqm/semantic-audit', {
+            const res = await fetch('/api/questoes/semantic-audit', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ api_key: apiKey })
@@ -718,7 +796,7 @@
         });
 
         try {
-            const res = await fetch('/api/oqm/process', {
+            const res = await fetch('/api/questoes/process', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -784,7 +862,7 @@
             html += `<div style="margin:12px 0;padding:12px;background:#1a2332;border-radius:8px;border:1px solid #334155">
                 <p style="font-weight:600;color:#f59e0b;margin-bottom:8px">📄 ${val.original_name} → ${val.file_name}</p>
                 <table><thead><tr>
-                    <th>OQM</th><th>Tags</th><th>Gabarito</th><th>Highlight</th><th>Resolução</th><th>1 Ref</th><th>Vídeo</th><th>Dificuldade</th>
+                    <th>ID</th><th>Tags</th><th>Gabarito</th><th>Highlight</th><th>Resolução</th><th>1 Ref</th><th>Vídeo</th><th>Dificuldade</th>
                 </tr></thead><tbody>`;
 
             for (const q of v.questions) {
@@ -867,11 +945,11 @@
     // DOWNLOAD
     // =====================================================
     function downloadSingle(index) {
-        window.location.href = `/api/oqm/download/${index}`;
+        window.location.href = `/api/questoes/download/${index}`;
     }
 
     function downloadAll() {
-        window.location.href = '/api/oqm/download-all';
+        window.location.href = '/api/questoes/download-all';
     }
 
     // =====================================================
@@ -949,7 +1027,7 @@
         const form = new FormData();
         for (const f of files) form.append('files', f);
         try {
-            const res = await fetch('/api/oqm/video/upload-questions', { method: 'POST', body: form });
+            const res = await fetch('/api/questoes/video/upload-questions', { method: 'POST', body: form });
             if (!res.ok) { const e = await res.json(); throw new Error(e.erro); }
             const data = await res.json();
             const label = files.length > 1 ? `${files.length} arquivos combinados` : files[0].name;
@@ -976,7 +1054,7 @@
         const form = new FormData();
         form.append('file', file);
         try {
-            const res = await fetch('/api/oqm/video/upload-videos', { method: 'POST', body: form });
+            const res = await fetch('/api/questoes/video/upload-videos', { method: 'POST', body: form });
             if (!res.ok) { const e = await res.json(); throw new Error(e.erro); }
             const data = await res.json();
             document.getElementById('videoVideosName').textContent = file.name;
@@ -997,7 +1075,7 @@
         btn.disabled = true;
         btn.innerHTML = '<span class="spinner"></span>Inserindo vídeos...';
         try {
-            const res = await fetch('/api/oqm/video/merge', { method: 'POST' });
+            const res = await fetch('/api/questoes/video/merge', { method: 'POST' });
             if (!res.ok) { const e = await res.json(); throw new Error(e.erro); }
             const data = await res.json();
             const el = document.getElementById('videoMergeResult');
@@ -1012,7 +1090,7 @@
     }
 
     function downloadVideoResult() {
-        window.location.href = '/api/oqm/video/download';
+        window.location.href = '/api/questoes/video/download';
     }
 
     function showToast(msg, isError = false) {

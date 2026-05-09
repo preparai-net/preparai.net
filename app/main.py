@@ -1,121 +1,175 @@
-from fastapi import FastAPI, Request, Response
+"""
+PreparAI / ESC — Deploy (Render/Railway)
+
+Auth: TODAS as 3 ferramentas usam Google OAuth + allowlist por ferramenta.
+- /clinica               → Google + permissão "clinica" (alias /fisiomed redireciona)
+- /plataformaoqm         → Google + permissão "plataformaoqm"
+- /separador             → Google + permissão "separador"
+- /admin                 → Google + role admin
+- O auth antigo username/password segue disponível em /auth/login-old (fallback)
+"""
+import os
+
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except Exception:
+    pass
+
+from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, RedirectResponse, JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
+
 from app.routes.gerar import router as gerar_router
 from app.routes.plataformaoqm import router as oqm_router
-from app.auth import verify_password, create_token, verify_token, COOKIE_NAME
-import os
+from app.routes.separador import router as separador_router
+from app.routes.admin import router as admin_router
+from app.routes.auth_google_routes import router as auth_google_router
+from app.auth_google import (
+    get_user_from_request, is_admin, can_access_tool, path_to_tool, TOOL_LABELS,
+)
 
-app = FastAPI(title="PreparAI — FisioMED + PlataformaOQM")
+# Auth antigo continua importado para o endpoint legado
+try:
+    from app.auth import verify_password, create_token, COOKIE_NAME
+    OLD_AUTH_AVAILABLE = True
+except Exception:
+    OLD_AUTH_AVAILABLE = False
 
-# ========================================
-# MIDDLEWARE DE AUTENTICAÇÃO
-# ========================================
+
+app = FastAPI(title="PreparAI / ESC")
+
+
+PUBLIC_PATHS = {"/", "/login", "/login.html"}
+PUBLIC_PREFIXES = ("/auth/", "/static_separador/", "/static_landing/", "/clinica/assets/", "/fisiomed/assets/")
+
+
 class AuthMiddleware(BaseHTTPMiddleware):
-    """Protege rotas /fisiomed exigindo login."""
-
-    # Rotas que NÃO precisam de autenticação
-    PUBLIC_PATHS = {"/", "/auth/login", "/login"}
-
     async def dispatch(self, request: Request, call_next):
         path = request.url.path
 
-        # Rotas públicas
-        if path in self.PUBLIC_PATHS:
+        # Redirects de compatibilidade ANTES de qualquer checagem
+        if path == "/plataformaoqm" or path.startswith("/plataformaoqm/"):
+            return RedirectResponse(url="/questoes" + path[len("/plataformaoqm"):], status_code=301)
+        if path.startswith("/api/oqm/"):
+            return RedirectResponse(url="/api/questoes/" + path[len("/api/oqm/"):], status_code=308)
+        if path == "/fisiomed" or path.startswith("/fisiomed/"):
+            return RedirectResponse(url="/clinica" + path[len("/fisiomed"):], status_code=301)
+
+        if path in PUBLIC_PATHS or any(path.startswith(p) for p in PUBLIC_PREFIXES):
             return await call_next(request)
 
-        # PlataformaOQM — sem autenticação
-        if path.startswith("/plataformaoqm") or path.startswith("/api/oqm"):
+        if path.startswith("/clinica/assets/") or path.startswith("/fisiomed/assets/"):
             return await call_next(request)
 
-        # Assets do login (logo) — permitir sem auth
-        if path.startswith("/fisiomed/assets/"):
+        # /admin → Google + admin
+        if path.startswith("/admin") or path.startswith("/api/admin"):
+            user = get_user_from_request(request)
+            if not user:
+                if path.startswith("/api/"):
+                    return JSONResponse({"error": "não autenticado"}, status_code=401)
+                return RedirectResponse(url=f"/login?next={path}", status_code=302)
+            if not is_admin(user.get("email", "")):
+                if path.startswith("/api/"):
+                    return JSONResponse({"error": "acesso restrito a administradores"}, status_code=403)
+                return RedirectResponse(url="/", status_code=302)
+            response = await call_next(request)
+            return response
+
+        # Identifica a ferramenta pelo path
+        tool = path_to_tool(path)
+        if tool is None:
             return await call_next(request)
 
-        # Página de login estática
-        if path == "/login" or path == "/login.html":
-            return await call_next(request)
+        user = get_user_from_request(request)
+        if not user:
+            if path.startswith("/api/"):
+                return JSONResponse({"error": "não autenticado"}, status_code=401)
+            return RedirectResponse(url=f"/login?next={path}", status_code=302)
 
-        # Rotas protegidas: /fisiomed e /fisiomed/*
-        if path.startswith("/fisiomed"):
-            token = request.cookies.get(COOKIE_NAME)
-            if not token or not verify_token(token):
-                # Redirecionar para login
-                return RedirectResponse(url="/login", status_code=302)
+        if not can_access_tool(user.get("email", ""), tool):
+            if path.startswith("/api/"):
+                return JSONResponse(
+                    {"error": f"sem permissão para a ferramenta '{TOOL_LABELS.get(tool, tool)}'"},
+                    status_code=403,
+                )
+            return RedirectResponse(url=f"/?denied={tool}", status_code=302)
 
         response = await call_next(request)
-
-        # Evitar cache de arquivos estáticos (JS/CSS/HTML)
-        if path.startswith("/fisiomed") and not path.startswith("/fisiomed/assets/"):
+        if path.startswith("/clinica") and not path.startswith("/clinica/assets/"):
             response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
             response.headers["Pragma"] = "no-cache"
-
         return response
+
 
 app.add_middleware(AuthMiddleware)
 app.include_router(gerar_router)
 app.include_router(oqm_router)
-
-# ========================================
-# ROTAS DE AUTENTICAÇÃO
-# ========================================
-@app.post("/auth/login")
-async def login(request: Request):
-    """Recebe username/password, retorna cookie de sessão."""
-    body = await request.json()
-    username = body.get("username", "")
-    password = body.get("password", "")
-
-    if not verify_password(username, password):
-        return JSONResponse({"error": "Credenciais inválidas"}, status_code=401)
-
-    token = create_token(username)
-    response = JSONResponse({"ok": True})
-    response.set_cookie(
-        key=COOKIE_NAME,
-        value=token,
-        httponly=True,
-        samesite="lax",
-        max_age=86400 * 7,  # 7 dias
-        path="/"
-    )
-    return response
+app.include_router(separador_router)
+app.include_router(admin_router)
+app.include_router(auth_google_router)
 
 
-@app.get("/auth/logout")
-async def logout():
-    """Remove cookie e redireciona para login."""
-    response = RedirectResponse(url="/login", status_code=302)
-    response.delete_cookie(key=COOKIE_NAME, path="/")
-    return response
+# Auth antigo (username/password) — preservado como fallback caso necessário
+if OLD_AUTH_AVAILABLE:
+    @app.post("/auth/login-old")
+    async def login_old(request: Request):
+        body = await request.json()
+        username = body.get("username", "")
+        password = body.get("password", "")
+        if not verify_password(username, password):
+            return JSONResponse({"error": "Credenciais inválidas"}, status_code=401)
+        token = create_token(username)
+        response = JSONResponse({"ok": True})
+        response.set_cookie(
+            key=COOKIE_NAME, value=token, httponly=True, samesite="lax",
+            max_age=86400 * 7, path="/",
+        )
+        return response
 
 
-# ========================================
-# PÁGINA DE LOGIN
-# ========================================
-login_html = os.path.join(os.path.dirname(__file__), "static", "login.html")
+SEP_DIR = os.path.join(os.path.dirname(__file__), "static_separador")
+LANDING_DIR = os.path.join(os.path.dirname(__file__), "static_landing")
+
 
 @app.get("/login")
 async def login_page():
-    return FileResponse(login_html)
+    return FileResponse(os.path.join(SEP_DIR, "login.html"))
 
-# ========================================
-# SERVIR ARQUIVOS ESTÁTICOS
-# ========================================
-# Assets (imagens do logo/rodape para o frontend)
+
+@app.get("/separador")
+async def separador_page():
+    return FileResponse(os.path.join(SEP_DIR, "index.html"))
+
+
+@app.get("/admin")
+async def admin_page():
+    return FileResponse(os.path.join(SEP_DIR, "admin.html"))
+
+
+# Estáticos
 assets_dir = os.path.join(os.path.dirname(__file__), "assets")
-app.mount("/fisiomed/assets", StaticFiles(directory=assets_dir), name="assets")
+if os.path.isdir(assets_dir):
+    app.mount("/clinica/assets", StaticFiles(directory=assets_dir), name="assets")
 
-# Frontend FisioMED (protegido pelo middleware)
 static_dir = os.path.join(os.path.dirname(__file__), "static")
-app.mount("/fisiomed", StaticFiles(directory=static_dir, html=True), name="static")
+if os.path.isdir(static_dir):
+    app.mount("/clinica", StaticFiles(directory=static_dir, html=True), name="static_clinica")
 
-# Frontend PlataformaOQM (sem autenticação)
-oqm_static_dir = os.path.join(os.path.dirname(__file__), "static_oqm")
-app.mount("/plataformaoqm", StaticFiles(directory=oqm_static_dir, html=True), name="static_oqm")
+questoes_static_dir = os.path.join(os.path.dirname(__file__), "static_oqm")  # diretório interno
+if os.path.isdir(questoes_static_dir):
+    app.mount("/questoes", StaticFiles(directory=questoes_static_dir, html=True), name="static_questoes")
+
+if os.path.isdir(SEP_DIR):
+    app.mount("/static_separador", StaticFiles(directory=SEP_DIR), name="static_separador")
+
+if os.path.isdir(LANDING_DIR):
+    app.mount("/static_landing", StaticFiles(directory=LANDING_DIR), name="static_landing")
 
 
 @app.get("/")
 async def root():
-    return RedirectResponse(url="/fisiomed")
+    if os.path.isfile(os.path.join(LANDING_DIR, "index.html")):
+        return FileResponse(os.path.join(LANDING_DIR, "index.html"))
+    return RedirectResponse(url="/login")
